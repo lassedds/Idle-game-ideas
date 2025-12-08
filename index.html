@@ -3,186 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crystal Clicker - Idle Game</title>
+    <title>Idle Legends - An Idle RPG Adventure</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div id="game-container">
-        <!-- Header with resources -->
-        <header id="header">
-            <div class="resource-display">
-                <span class="crystal-icon">💎</span>
-                <span id="crystal-count">0</span>
-                <span class="per-second">(+<span id="crystals-per-second">0</span>/s)</span>
+        <!-- Top bar with resources and info -->
+        <header id="top-bar">
+            <div class="game-title">
+                <span class="title-icon">⚔️</span>
+                <span>Idle Legends</span>
             </div>
-            <div class="resource-display secondary">
-                <span class="gem-icon">✨</span>
-                <span id="gem-count">0</span>
-                <span class="label">Gems</span>
+            <div class="resources-bar">
+                <div class="resource gold">
+                    <span class="icon">💰</span>
+                    <span id="gold-display">0</span>
+                </div>
             </div>
-            <div class="resource-display prestige-display" id="stardust-display" style="display:none;">
-                <span class="stardust-icon">⭐</span>
-                <span id="stardust-count">0</span>
-                <span class="label">Stardust</span>
+            <div class="header-buttons">
+                <button id="save-btn" class="header-btn" title="Save Game">💾</button>
+                <button id="settings-btn" class="header-btn" title="Settings">⚙️</button>
             </div>
         </header>
 
-        <!-- Event Banner -->
-        <div id="event-banner" class="hidden">
-            <span id="event-icon"></span>
-            <span id="event-name"></span>
-            <span id="event-timer"></span>
-            <div id="event-progress-bar"><div id="event-progress-fill"></div></div>
+        <!-- Character selection bar -->
+        <div id="character-bar">
+            <div id="character-slots"></div>
+            <button id="create-character-btn" class="create-char-btn">+ New Character</button>
         </div>
 
-        <!-- Main game area -->
-        <main id="main-area">
-            <!-- Click area -->
-            <div id="click-area">
-                <div id="crystal-container">
-                    <div id="main-crystal" class="clickable">
-                        <div class="crystal-shape"></div>
-                        <div class="crystal-glow"></div>
-                    </div>
-                </div>
-                <div id="click-power">+<span id="click-value">1</span> per click</div>
-                <div id="particles-container"></div>
-
-                <!-- Active bonuses display -->
-                <div id="active-bonuses"></div>
-            </div>
-
-            <!-- Stats panel -->
-            <div id="stats-panel">
-                <h3>📊 Statistics</h3>
-                <div class="stat-row">
-                    <span>Total Clicks:</span>
-                    <span id="total-clicks">0</span>
-                </div>
-                <div class="stat-row">
-                    <span>Total Crystals:</span>
-                    <span id="total-crystals">0</span>
-                </div>
-                <div class="stat-row">
-                    <span>Play Time:</span>
-                    <span id="play-time">0:00</span>
-                </div>
-                <div class="stat-row">
-                    <span>Prestige Level:</span>
-                    <span id="prestige-level">0</span>
-                </div>
-            </div>
-        </main>
-
-        <!-- Side panels -->
-        <aside id="side-panel">
-            <!-- Tab navigation -->
-            <div id="tab-nav">
-                <button class="tab-btn active" data-tab="buildings" title="Buildings">🏭</button>
-                <button class="tab-btn" data-tab="upgrades" title="Upgrades">⬆️</button>
-                <button class="tab-btn" data-tab="expeditions" title="Expeditions">🗺️</button>
-                <button class="tab-btn" data-tab="artifacts" title="Artifacts">🏺</button>
-                <button class="tab-btn" data-tab="prestige" title="Prestige">⭐</button>
-                <button class="tab-btn" data-tab="achievements" title="Achievements">🏆</button>
-            </div>
-
-            <!-- Buildings tab -->
-            <div id="buildings-tab" class="tab-content active">
-                <h3>🏭 Buildings</h3>
-                <div id="buildings-list"></div>
-            </div>
-
-            <!-- Upgrades tab -->
-            <div id="upgrades-tab" class="tab-content">
-                <h3>⬆️ Upgrades</h3>
-                <div id="upgrades-list"></div>
-            </div>
-
-            <!-- Expeditions tab -->
-            <div id="expeditions-tab" class="tab-content">
-                <h3>🗺️ Expeditions</h3>
-                <p class="tab-description">Send teams to discover treasures!</p>
-
-                <!-- Active expeditions -->
-                <div id="active-expeditions">
-                    <h4>Active (<span id="expedition-count">0</span>/3)</h4>
-                    <div id="active-expeditions-list"></div>
+        <!-- Main game layout -->
+        <div id="game-layout">
+            <!-- Left panel - Character info -->
+            <aside id="left-panel">
+                <div id="character-info" class="panel">
+                    <h3>No Character</h3>
+                    <p class="hint">Create a character to begin!</p>
                 </div>
 
-                <!-- Pending rewards -->
-                <div id="pending-rewards" class="hidden">
-                    <h4>🎁 Claim Rewards!</h4>
-                    <div id="pending-rewards-list"></div>
-                </div>
-
-                <!-- Available destinations -->
-                <h4>Destinations</h4>
-                <div id="destinations-list"></div>
-            </div>
-
-            <!-- Artifacts tab -->
-            <div id="artifacts-tab" class="tab-content">
-                <h3>🏺 Artifacts</h3>
-                <p class="tab-description">Collect powerful relics!</p>
-                <div id="artifact-bonuses"></div>
-                <div id="artifacts-list"></div>
-            </div>
-
-            <!-- Prestige tab -->
-            <div id="prestige-tab" class="tab-content">
-                <h3>⭐ Prestige</h3>
-                <p class="tab-description">Reset for permanent power!</p>
-
-                <div id="prestige-info">
-                    <div class="prestige-box">
-                        <div class="prestige-current">
-                            <span>Stardust:</span>
-                            <span id="current-stardust">0 ⭐</span>
-                        </div>
-                        <div class="prestige-potential">
-                            <span>Prestige for:</span>
-                            <span id="potential-stardust">0 ⭐</span>
-                        </div>
-                        <button id="prestige-btn" class="prestige-button" disabled>
-                            🌟 PRESTIGE 🌟
-                        </button>
-                        <p class="prestige-warning">Resets progress, keeps artifacts!</p>
+                <div id="equipment-panel" class="panel hidden">
+                    <h3>⚔️ Equipment</h3>
+                    <div id="equipment-slots">
+                        <div class="equip-slot" data-slot="helmet" title="Helmet">🪖</div>
+                        <div class="equip-slot" data-slot="weapon" title="Weapon">⚔️</div>
+                        <div class="equip-slot" data-slot="armor" title="Armor">🛡️</div>
+                        <div class="equip-slot" data-slot="gloves" title="Gloves">🧤</div>
+                        <div class="equip-slot" data-slot="boots" title="Boots">👢</div>
+                        <div class="equip-slot" data-slot="ring" title="Ring">💍</div>
+                        <div class="equip-slot" data-slot="amulet" title="Amulet">📿</div>
                     </div>
                 </div>
 
-                <h4>Stardust Upgrades</h4>
-                <div id="prestige-upgrades-list"></div>
-            </div>
+                <div id="stats-panel" class="panel hidden">
+                    <h3>📊 Stats</h3>
+                    <div class="stat-grid">
+                        <div class="stat"><span class="stat-icon">💪</span> STR: <span id="stat-str">0</span></div>
+                        <div class="stat"><span class="stat-icon">🏃</span> AGI: <span id="stat-agi">0</span></div>
+                        <div class="stat"><span class="stat-icon">🧠</span> WIS: <span id="stat-wis">0</span></div>
+                        <div class="stat"><span class="stat-icon">🍀</span> LUK: <span id="stat-luk">0</span></div>
+                    </div>
+                    <div class="combat-stats">
+                        <div>⚔️ Power: <span id="combat-power">0</span></div>
+                        <div>🎯 Crit: <span id="crit-chance">5%</span></div>
+                        <div>🛡️ Defense: <span id="defense">0</span></div>
+                    </div>
+                </div>
+            </aside>
 
-            <!-- Achievements tab -->
-            <div id="achievements-tab" class="tab-content">
-                <h3>🏆 Achievements</h3>
-                <div id="achievements-list"></div>
-            </div>
-        </aside>
+            <!-- Center - Main activity area -->
+            <main id="center-panel">
+                <!-- Navigation tabs -->
+                <div id="main-tabs">
+                    <button class="main-tab active" data-tab="world">🗺️ World</button>
+                    <button class="main-tab" data-tab="skills">⛏️ Skills</button>
+                    <button class="main-tab" data-tab="inventory">🎒 Inventory</button>
+                    <button class="main-tab" data-tab="quests">📜 Quests</button>
+                    <button class="main-tab" data-tab="talents">✨ Talents</button>
+                </div>
+
+                <!-- World tab - Zone selection and activity -->
+                <div id="world-tab" class="main-content active">
+                    <div id="world-map">
+                        <h3>🗺️ World Map</h3>
+                        <div id="zones-grid"></div>
+                    </div>
+                    <div id="current-activity" class="hidden">
+                        <div id="activity-header">
+                            <h3 id="activity-title">Activity</h3>
+                            <button id="stop-activity-btn" class="stop-btn">⏹️ Stop</button>
+                        </div>
+                        <div id="activity-content"></div>
+                    </div>
+                </div>
+
+                <!-- Skills tab -->
+                <div id="skills-tab" class="main-content">
+                    <h3>⛏️ Skills</h3>
+                    <div id="skills-grid"></div>
+                </div>
+
+                <!-- Inventory tab -->
+                <div id="inventory-tab" class="main-content">
+                    <div class="inventory-header">
+                        <h3>🎒 Inventory</h3>
+                        <div class="inventory-filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="equipment">Equipment</button>
+                            <button class="filter-btn" data-filter="resource">Resources</button>
+                            <button class="filter-btn" data-filter="consumable">Consumables</button>
+                        </div>
+                    </div>
+                    <div id="inventory-grid"></div>
+                </div>
+
+                <!-- Quests tab -->
+                <div id="quests-tab" class="main-content">
+                    <div class="quests-header">
+                        <h3>📜 Quests</h3>
+                        <div class="quest-filters">
+                            <button class="filter-btn active" data-filter="active">Active</button>
+                            <button class="filter-btn" data-filter="available">Available</button>
+                            <button class="filter-btn" data-filter="completed">Completed</button>
+                        </div>
+                    </div>
+                    <div id="quests-list"></div>
+                </div>
+
+                <!-- Talents tab -->
+                <div id="talents-tab" class="main-content">
+                    <div class="talents-header">
+                        <h3>✨ Talents</h3>
+                        <div class="talent-points">
+                            Points: <span id="talent-points">0</span>
+                        </div>
+                    </div>
+                    <div id="talent-tree-tabs">
+                        <button class="tree-tab active" data-tree="combat">⚔️ Combat</button>
+                        <button class="tree-tab" data-tree="gathering">⛏️ Gathering</button>
+                        <button class="tree-tab" data-tree="misc">✨ Misc</button>
+                    </div>
+                    <div id="talent-tree-content"></div>
+                </div>
+            </main>
+
+            <!-- Right panel - Activity log and combat -->
+            <aside id="right-panel">
+                <div id="combat-panel" class="panel hidden">
+                    <h3>⚔️ Combat</h3>
+                    <div id="enemy-info" class="enemy-card">
+                        <div class="enemy-header">
+                            <span id="enemy-icon">🟢</span>
+                            <span id="enemy-name">Slime</span>
+                            <span id="enemy-level">Lv. 1</span>
+                        </div>
+                        <div class="hp-bar">
+                            <div id="enemy-hp-fill" class="hp-fill"></div>
+                            <span id="enemy-hp-text">20/20</span>
+                        </div>
+                    </div>
+                    <div id="combat-log"></div>
+                    <div id="player-hp-bar" class="hp-bar player">
+                        <div id="player-hp-fill" class="hp-fill"></div>
+                        <span id="player-hp-text">100/100</span>
+                    </div>
+                </div>
+
+                <div id="activity-log" class="panel">
+                    <h3>📋 Activity Log</h3>
+                    <div id="log-content"></div>
+                </div>
+
+                <div id="loot-panel" class="panel">
+                    <h3>🎁 Recent Loot</h3>
+                    <div id="loot-list"></div>
+                </div>
+            </aside>
+        </div>
 
         <!-- Notification area -->
         <div id="notifications"></div>
 
-        <!-- Save controls -->
-        <div id="save-controls">
-            <button id="save-btn">💾 Save</button>
-            <button id="reset-btn">🔄 Reset</button>
-            <span id="auto-save-status">Auto-save: ON</span>
+        <!-- Character creation modal -->
+        <div id="create-character-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Create Character</h2>
+                <div class="form-group">
+                    <label for="char-name">Name:</label>
+                    <input type="text" id="char-name" maxlength="12" placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label>Class:</label>
+                    <div id="class-selection"></div>
+                </div>
+                <div class="modal-buttons">
+                    <button id="confirm-create-btn" class="btn-primary">Create</button>
+                    <button id="cancel-create-btn" class="btn-secondary">Cancel</button>
+                </div>
+            </div>
         </div>
+
+        <!-- Item tooltip -->
+        <div id="item-tooltip" class="tooltip hidden"></div>
     </div>
 
-    <!-- Scripts (modular) -->
-    <script src="js/state.js"></script>
-    <script src="js/resources.js"></script>
-    <script src="js/buildings.js"></script>
-    <script src="js/upgrades.js"></script>
-    <script src="js/achievements.js"></script>
-    <script src="js/expeditions.js"></script>
-    <script src="js/artifacts.js"></script>
-    <script src="js/events.js"></script>
-    <script src="js/prestige.js"></script>
-    <script src="js/particles.js"></script>
+    <!-- Scripts (modular) - load order matters -->
+    <script src="js/character.js"></script>
+    <script src="js/skills.js"></script>
+    <script src="js/inventory.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/combat.js"></script>
+    <script src="js/quests.js"></script>
+    <script src="js/talents.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/save.js"></script>
     <script src="js/main.js"></script>

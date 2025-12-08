@@ -1,575 +1,843 @@
 /**
  * UI Module
- * Handles all UI rendering and updates
+ * Handles all UI rendering and interactions for Idle Legends
  */
 
 const UI = (function() {
-    // DOM element references
-    const elements = {};
+    let currentTab = 'world';
+    let currentQuestFilter = 'active';
+    let currentInventoryFilter = 'all';
+    let currentTalentTree = 'combat';
+    let selectedClass = null;
 
     /**
-     * Initialize UI elements
+     * Initialize UI
      */
     function init() {
-        // Cache DOM elements
-        elements.crystalCount = document.getElementById('crystal-count');
-        elements.gemCount = document.getElementById('gem-count');
-        elements.cps = document.getElementById('crystals-per-second');
-        elements.clickValue = document.getElementById('click-value');
-        elements.totalClicks = document.getElementById('total-clicks');
-        elements.totalCrystals = document.getElementById('total-crystals');
-        elements.playTime = document.getElementById('play-time');
-        elements.prestigeLevel = document.getElementById('prestige-level');
-        elements.buildingsList = document.getElementById('buildings-list');
-        elements.upgradesList = document.getElementById('upgrades-list');
-        elements.achievementsList = document.getElementById('achievements-list');
-        elements.notifications = document.getElementById('notifications');
-
-        // New elements
-        elements.eventBanner = document.getElementById('event-banner');
-        elements.eventIcon = document.getElementById('event-icon');
-        elements.eventName = document.getElementById('event-name');
-        elements.eventTimer = document.getElementById('event-timer');
-        elements.eventProgressFill = document.getElementById('event-progress-fill');
-        elements.activeBonuses = document.getElementById('active-bonuses');
-        elements.expeditionCount = document.getElementById('expedition-count');
-        elements.activeExpeditionsList = document.getElementById('active-expeditions-list');
-        elements.pendingRewards = document.getElementById('pending-rewards');
-        elements.pendingRewardsList = document.getElementById('pending-rewards-list');
-        elements.destinationsList = document.getElementById('destinations-list');
-        elements.artifactBonuses = document.getElementById('artifact-bonuses');
-        elements.artifactsList = document.getElementById('artifacts-list');
-        elements.currentStardust = document.getElementById('current-stardust');
-        elements.potentialStardust = document.getElementById('potential-stardust');
-        elements.prestigeBtn = document.getElementById('prestige-btn');
-        elements.prestigeUpgradesList = document.getElementById('prestige-upgrades-list');
-        elements.stardustDisplay = document.getElementById('stardust-display');
-        elements.stardustCount = document.getElementById('stardust-count');
-
-        // Setup tab navigation
-        setupTabs();
-
-        // Setup prestige button
-        if (elements.prestigeBtn) {
-            elements.prestigeBtn.addEventListener('click', () => {
-                Game.performPrestige();
-            });
-        }
-
-        // Initial render
-        renderBuildings();
-        renderUpgrades();
-        renderAchievements();
-        renderExpeditions();
-        renderArtifacts();
-        renderPrestige();
+        setupTabNavigation();
+        setupCharacterCreation();
+        setupInventoryFilters();
+        setupQuestFilters();
+        setupTalentTabs();
+        setupSaveButton();
+        renderClassSelection();
     }
 
     /**
-     * Setup tab navigation
+     * Setup save button
      */
-    function setupTabs() {
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                tabBtns.forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                btn.classList.add('active');
-                const tabId = btn.dataset.tab + '-tab';
-                document.getElementById(tabId).classList.add('active');
+    function setupSaveButton() {
+        document.getElementById('save-btn').addEventListener('click', () => {
+            SaveSystem.save();
+            showNotification('Game saved!', 'success');
+        });
+    }
+
+    /**
+     * Setup main tab navigation
+     */
+    function setupTabNavigation() {
+        document.querySelectorAll('.main-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                switchTab(tabName);
             });
         });
     }
 
     /**
-     * Update resource displays
+     * Switch main content tab
      */
-    function updateResources() {
-        const crystals = GameState.getCrystals();
-        const gems = GameState.getGems();
-        const cps = Resources.calculateCPS();
-        const clickValue = Resources.calculateClickValue();
+    function switchTab(tabName) {
+        currentTab = tabName;
 
-        elements.crystalCount.textContent = Resources.formatNumber(crystals);
-        elements.gemCount.textContent = Resources.formatNumber(gems);
-        elements.cps.textContent = Resources.formatNumber(cps);
-        elements.clickValue.textContent = Resources.formatNumber(clickValue);
+        document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.main-content').forEach(c => c.classList.remove('active'));
 
-        // Update stardust display
-        if (typeof Prestige !== 'undefined') {
-            const prestigeInfo = Prestige.getPrestigeInfo();
-            if (prestigeInfo.totalStardust > 0 || prestigeInfo.level > 0) {
-                elements.stardustDisplay.style.display = 'flex';
-                elements.stardustCount.textContent = prestigeInfo.stardust;
-            }
-        }
+        const tabBtn = document.querySelector(`[data-tab="${tabName}"]`);
+        const tabContent = document.getElementById(`${tabName}-tab`);
 
-        updateAffordability();
+        if (tabBtn) tabBtn.classList.add('active');
+        if (tabContent) tabContent.classList.add('active');
     }
 
     /**
-     * Update stats display
+     * Setup character creation modal
      */
-    function updateStats() {
-        const stats = GameState.getStats();
-        elements.totalClicks.textContent = Resources.formatNumber(stats.totalClicks);
-        elements.totalCrystals.textContent = Resources.formatNumber(stats.totalCrystals);
-        elements.playTime.textContent = Resources.formatTime(stats.totalPlayTime);
+    function setupCharacterCreation() {
+        const modal = document.getElementById('create-character-modal');
+        const createBtn = document.getElementById('create-character-btn');
+        const confirmBtn = document.getElementById('confirm-create-btn');
+        const cancelBtn = document.getElementById('cancel-create-btn');
 
-        if (typeof Prestige !== 'undefined') {
-            elements.prestigeLevel.textContent = Prestige.getPrestigeInfo().level;
-        }
-    }
-
-    /**
-     * Render buildings list
-     */
-    function renderBuildings() {
-        const buildings = Buildings.getAll();
-        let html = '';
-
-        buildings.forEach(building => {
-            const owned = GameState.getBuildingCount(building.id);
-            const cost = Buildings.getCost(building.id);
-            const production = Buildings.getProduction(building.id);
-            const isUnlocked = Buildings.isUnlocked(building.id);
-            const canAfford = Buildings.canAfford(building.id);
-
-            if (!isUnlocked && owned === 0) return;
-
-            html += `
-                <div class="item-card ${canAfford ? 'affordable' : ''} ${!isUnlocked ? 'locked' : ''}"
-                     data-building="${building.id}"
-                     onclick="Game.buyBuilding('${building.id}')">
-                    <div class="item-header">
-                        <span class="item-icon">${building.icon}</span>
-                        <span class="item-name">${building.name}</span>
-                        <span class="item-owned">${owned}</span>
-                    </div>
-                    <div class="item-description">${building.description}</div>
-                    <div class="item-stats">
-                        <span class="item-production">
-                            ${owned > 0 ? Resources.formatNumber(production) + '/s' : '+' + building.production + '/s each'}
-                        </span>
-                        <span class="item-cost ${canAfford ? 'can-afford' : 'cannot-afford'}">
-                            💎 ${Resources.formatNumber(cost)}
-                        </span>
-                    </div>
-                </div>
-            `;
-        });
-
-        elements.buildingsList.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">🏗️</div>Keep clicking to unlock buildings!</div>';
-    }
-
-    /**
-     * Render upgrades list
-     */
-    function renderUpgrades() {
-        const upgrades = Upgrades.getAll();
-        let html = '';
-
-        upgrades.forEach(upgrade => {
-            const isUnlocked = Upgrades.isUnlocked(upgrade.id);
-            const isPurchased = GameState.hasUpgrade(upgrade.id);
-            const canAfford = Upgrades.canAfford(upgrade.id);
-
-            if (!isUnlocked) return;
-
-            html += `
-                <div class="item-card ${isPurchased ? 'purchased' : ''} ${canAfford && !isPurchased ? 'affordable' : ''}"
-                     data-upgrade="${upgrade.id}"
-                     onclick="Game.buyUpgrade('${upgrade.id}')">
-                    <div class="item-header">
-                        <span class="item-icon">${upgrade.icon}</span>
-                        <span class="item-name">${upgrade.name}</span>
-                        ${isPurchased ? '<span class="item-owned">✓</span>' : ''}
-                    </div>
-                    <div class="item-description">${upgrade.description}</div>
-                    ${!isPurchased ? `
-                        <div class="item-stats">
-                            <span class="item-production">${upgrade.type}</span>
-                            <span class="item-cost ${canAfford ? 'can-afford' : 'cannot-afford'}">
-                                💎 ${Resources.formatNumber(upgrade.cost)}
-                            </span>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        });
-
-        elements.upgradesList.innerHTML = html || '<div class="empty-state"><div class="empty-state-icon">⬆️</div>Keep playing to unlock upgrades!</div>';
-    }
-
-    /**
-     * Render achievements list
-     */
-    function renderAchievements() {
-        const achievements = Achievements.getAll();
-        let html = `<p style="margin-bottom:15px;color:#888;">${Achievements.getUnlockedCount()}/${Achievements.getTotalCount()} unlocked</p>`;
-
-        achievements.forEach(achievement => {
-            const isUnlocked = GameState.hasAchievement(achievement.id);
-
-            html += `
-                <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}">
-                    <span class="achievement-icon">${achievement.icon}</span>
-                    <div class="achievement-info">
-                        <div class="achievement-name">${achievement.name}</div>
-                        <div class="achievement-description">${achievement.description}</div>
-                        <div class="achievement-reward">+${achievement.reward} ✨ Gems</div>
-                    </div>
-                </div>
-            `;
-        });
-
-        elements.achievementsList.innerHTML = html;
-    }
-
-    /**
-     * Render expeditions tab
-     */
-    function renderExpeditions() {
-        if (typeof Expeditions === 'undefined') return;
-
-        // Active expeditions
-        const active = Expeditions.getActive();
-        elements.expeditionCount.textContent = active.length;
-
-        let activeHtml = '';
-        active.forEach((exp) => {
-            activeHtml += `
-                <div class="expedition-card active">
-                    <div class="expedition-header">
-                        <span class="expedition-name">
-                            <span class="expedition-icon">${exp.destination.icon}</span>
-                            ${exp.destination.name}
-                        </span>
-                    </div>
-                    <div class="expedition-progress">
-                        <div class="expedition-progress-bar">
-                            <div class="expedition-progress-fill" style="width: ${exp.progress * 100}%"></div>
-                        </div>
-                        <div class="expedition-timer">
-                            ${exp.isComplete ? '✅ Complete!' : Resources.formatTimeRemaining(exp.remaining / 1000)}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-        elements.activeExpeditionsList.innerHTML = activeHtml || '<p style="color:#888;text-align:center;padding:10px;">No active expeditions</p>';
-
-        // Pending rewards
-        const pending = Expeditions.getPendingRewards();
-        if (pending.length > 0) {
-            elements.pendingRewards.classList.remove('hidden');
-            let pendingHtml = '';
-            pending.forEach((reward, index) => {
-                pendingHtml += `
-                    <div class="reward-card" onclick="Game.claimExpeditionReward(${index})">
-                        <div class="reward-header">${reward.destination.icon} ${reward.destination.name}</div>
-                        <div class="reward-items">
-                            <span class="reward-item crystals">💎 ${Resources.formatNumber(reward.rewards.crystals)}</span>
-                            ${reward.rewards.gems > 0 ? `<span class="reward-item gems">✨ ${reward.rewards.gems}</span>` : ''}
-                            ${reward.rewards.artifact ? `<span class="reward-item artifact">🏺 ${reward.rewards.artifact.name}</span>` : ''}
-                            ${reward.rewards.bonus ? `<span class="reward-item bonus">⚡ ${reward.rewards.bonus.type} boost!</span>` : ''}
-                        </div>
-                        <p style="font-size:0.75rem;color:#ffd700;margin-top:8px;">Click to claim!</p>
-                    </div>
-                `;
-            });
-            elements.pendingRewardsList.innerHTML = pendingHtml;
-        } else {
-            elements.pendingRewards.classList.add('hidden');
-        }
-
-        // Available destinations
-        const destinations = Expeditions.getDestinations();
-        let destHtml = '';
-        destinations.forEach(dest => {
-            const isUnlocked = Expeditions.isUnlocked(dest.id);
-            const canStart = Expeditions.canStart(dest.id);
-            const canAfford = GameState.getCrystals() >= dest.cost;
-
-            if (!isUnlocked) return;
-
-            let riskDots = '';
-            for (let i = 1; i <= 7; i++) {
-                riskDots += `<span class="risk-dot ${i <= dest.riskLevel ? 'active' : ''}"></span>`;
-            }
-
-            destHtml += `
-                <div class="expedition-card ${canStart ? 'affordable' : ''} ${!canAfford ? 'locked' : ''}"
-                     onclick="Game.startExpedition('${dest.id}')">
-                    <div class="expedition-header">
-                        <span class="expedition-name">
-                            <span class="expedition-icon">${dest.icon}</span>
-                            ${dest.name}
-                        </span>
-                        <span class="expedition-duration">${Resources.formatTimeRemaining(dest.duration)}</span>
-                    </div>
-                    <div class="expedition-description">${dest.description}</div>
-                    <div class="expedition-rewards">
-                        <span>💎 ${Resources.formatNumber(dest.rewards.crystals.min)}-${Resources.formatNumber(dest.rewards.crystals.max)}</span>
-                        <span>🏺 ${Math.floor(dest.rewards.artifactChance * 100)}%</span>
-                        <div class="risk-level">${riskDots}</div>
-                    </div>
-                    <div class="item-stats" style="margin-top:8px;">
-                        <span></span>
-                        <span class="expedition-cost">💎 ${Resources.formatNumber(dest.cost)}</span>
-                    </div>
-                </div>
-            `;
-        });
-        elements.destinationsList.innerHTML = destHtml || '<div class="empty-state">Unlock destinations by earning crystals!</div>';
-    }
-
-    /**
-     * Render artifacts tab
-     */
-    function renderArtifacts() {
-        if (typeof Artifacts === 'undefined') return;
-
-        const prodBonus = Artifacts.getProductionBonus();
-        const clickBonus = Artifacts.getClickBonus();
-
-        let bonusHtml = '';
-        if (prodBonus > 1 || clickBonus > 1) {
-            bonusHtml = `
-                <div class="artifact-bonus-row">
-                    <span>Production:</span>
-                    <span class="artifact-bonus-value">x${prodBonus.toFixed(2)}</span>
-                </div>
-                <div class="artifact-bonus-row">
-                    <span>Click Power:</span>
-                    <span class="artifact-bonus-value">x${clickBonus.toFixed(2)}</span>
-                </div>
-            `;
-        } else {
-            bonusHtml = '<p style="color:#888;text-align:center;">Find artifacts from expeditions!</p>';
-        }
-        elements.artifactBonuses.innerHTML = bonusHtml;
-
-        const artifacts = Artifacts.getOwned();
-        let artifactsHtml = '';
-
-        if (artifacts.length === 0) {
-            artifactsHtml = '<div class="empty-state"><div class="empty-state-icon">🏺</div>No artifacts yet. Complete expeditions!</div>';
-        } else {
-            const rarityOrder = ['legendary', 'epic', 'rare', 'uncommon', 'common'];
-            const sorted = [...artifacts].sort((a, b) =>
-                rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity)
-            );
-
-            sorted.forEach(artifact => {
-                const effectText = getArtifactEffectText(artifact);
-                artifactsHtml += `
-                    <div class="artifact-card ${artifact.rarity}">
-                        <span class="artifact-icon">${artifact.icon}</span>
-                        <div class="artifact-info">
-                            <div class="artifact-name">${artifact.name}</div>
-                            <div class="artifact-rarity ${artifact.rarity}">${artifact.rarity}</div>
-                            <div class="artifact-effect">${effectText}</div>
-                        </div>
-                        ${artifact.count > 1 ? `<span class="artifact-count">x${artifact.count}</span>` : ''}
-                    </div>
-                `;
-            });
-        }
-        elements.artifactsList.innerHTML = artifactsHtml;
-    }
-
-    function getArtifactEffectText(artifact) {
-        const effect = artifact.effect;
-        const value = ((effect.value - 1) * 100).toFixed(0);
-        switch (effect.type) {
-            case 'production': return `+${value}% production`;
-            case 'click': return `+${value}% click power`;
-            case 'all': return `+${value}% all stats`;
-            case 'expedition': return `-${Math.abs(value)}% expedition time`;
-            default: return '';
-        }
-    }
-
-    /**
-     * Render prestige tab
-     */
-    function renderPrestige() {
-        if (typeof Prestige === 'undefined') return;
-
-        const info = Prestige.getPrestigeInfo();
-
-        elements.currentStardust.textContent = `${info.stardust} ⭐`;
-        elements.potentialStardust.textContent = `+${info.potentialStardust} ⭐`;
-        elements.prestigeBtn.disabled = !info.canPrestige;
-
-        const upgrades = Prestige.getUpgrades();
-        let html = '';
-
-        upgrades.forEach(upgrade => {
-            const levelText = upgrade.maxLevel === -1
-                ? `Lv.${upgrade.currentLevel}`
-                : `${upgrade.currentLevel}/${upgrade.maxLevel}`;
-
-            html += `
-                <div class="prestige-upgrade-card ${upgrade.canAfford ? 'affordable' : ''} ${upgrade.maxed ? 'maxed' : ''}"
-                     onclick="Game.buyPrestigeUpgrade('${upgrade.id}')">
-                    <div class="prestige-upgrade-header">
-                        <span class="prestige-upgrade-name">
-                            ${upgrade.icon} ${upgrade.name}
-                        </span>
-                        <span class="prestige-upgrade-level">${levelText}</span>
-                    </div>
-                    <div class="prestige-upgrade-description">${upgrade.description}</div>
-                    ${!upgrade.maxed ? `
-                        <div class="prestige-upgrade-cost">⭐ ${upgrade.cost} Stardust</div>
-                    ` : '<div style="color:#00b894;">MAXED</div>'}
-                </div>
-            `;
-        });
-
-        elements.prestigeUpgradesList.innerHTML = html;
-    }
-
-    /**
-     * Update event banner
-     */
-    function updateEventBanner() {
-        if (typeof Events === 'undefined') return;
-
-        const event = Events.getActiveEvent();
-
-        if (event) {
-            elements.eventBanner.classList.remove('hidden');
-            elements.eventIcon.textContent = event.icon;
-            elements.eventName.textContent = event.name;
-            elements.eventTimer.textContent = Resources.formatTimeRemaining(event.remaining);
-            elements.eventProgressFill.style.width = `${(1 - event.progress) * 100}%`;
-        } else {
-            elements.eventBanner.classList.add('hidden');
-        }
-    }
-
-    /**
-     * Update active bonuses display
-     */
-    function updateActiveBonuses() {
-        if (typeof Expeditions === 'undefined') return;
-
-        const expeditionBonuses = Expeditions.getActiveBonuses();
-        let html = '';
-
-        expeditionBonuses.forEach(bonus => {
-            html += `
-                <div class="bonus-badge">
-                    <span>${bonus.type.toUpperCase()}</span>
-                    <span>x${bonus.multiplier}</span>
-                    <span>${Resources.formatTimeRemaining(bonus.remaining)}</span>
-                </div>
-            `;
-        });
-
-        elements.activeBonuses.innerHTML = html;
-    }
-
-    /**
-     * Update affordability styling
-     */
-    function updateAffordability() {
-        document.querySelectorAll('[data-building]').forEach(card => {
-            const buildingId = card.dataset.building;
-            const canAfford = Buildings.canAfford(buildingId);
-            card.classList.toggle('affordable', canAfford);
-            const costEl = card.querySelector('.item-cost');
-            if (costEl) {
-                costEl.classList.toggle('can-afford', canAfford);
-                costEl.classList.toggle('cannot-afford', !canAfford);
-            }
-        });
-
-        document.querySelectorAll('[data-upgrade]').forEach(card => {
-            const upgradeId = card.dataset.upgrade;
-            if (!GameState.hasUpgrade(upgradeId)) {
-                const canAfford = Upgrades.canAfford(upgradeId);
-                card.classList.toggle('affordable', canAfford);
-                const costEl = card.querySelector('.item-cost');
-                if (costEl) {
-                    costEl.classList.toggle('can-afford', canAfford);
-                    costEl.classList.toggle('cannot-afford', !canAfford);
+        if (createBtn) {
+            createBtn.addEventListener('click', () => {
+                if (Character.getAll().length >= Character.MAX_CHARACTERS) {
+                    showNotification('Maximum characters reached!', 'error');
+                    return;
                 }
+                modal.classList.remove('hidden');
+            });
+        }
+
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                selectedClass = null;
+                document.getElementById('char-name').value = '';
+                renderClassSelection();
+            });
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                const name = document.getElementById('char-name').value.trim();
+                if (!name) {
+                    showNotification('Please enter a name!', 'error');
+                    return;
+                }
+                if (!selectedClass) {
+                    showNotification('Please select a class!', 'error');
+                    return;
+                }
+
+                const char = Character.createCharacter(name, selectedClass);
+                if (char) {
+                    Skills.initCharacter(char.id);
+                    Talents.initCharacter(char.id);
+                    modal.classList.add('hidden');
+                    selectedClass = null;
+                    document.getElementById('char-name').value = '';
+                    renderCharacterSlots();
+                    updateCharacterInfo();
+                    showNotification(`${name} the ${Character.getClass(selectedClass).name} created!`, 'success');
+                }
+            });
+        }
+    }
+
+    /**
+     * Render class selection in modal
+     */
+    function renderClassSelection() {
+        const container = document.getElementById('class-selection');
+        if (!container) return;
+
+        const classes = Character.getClasses();
+        container.innerHTML = '';
+
+        for (const classId in classes) {
+            const cls = classes[classId];
+            const div = document.createElement('div');
+            div.className = `class-option ${selectedClass === classId ? 'selected' : ''}`;
+            div.innerHTML = `
+                <span class="class-icon">${cls.icon}</span>
+                <div class="class-name">${cls.name}</div>
+                <div class="class-desc">${cls.description}</div>
+            `;
+            div.addEventListener('click', () => {
+                selectedClass = classId;
+                renderClassSelection();
+            });
+            container.appendChild(div);
+        }
+    }
+
+    /**
+     * Render character slots in top bar
+     */
+    function renderCharacterSlots() {
+        const container = document.getElementById('character-slots');
+        if (!container) return;
+
+        const characters = Character.getAll();
+        const activeChar = Character.getActive();
+
+        container.innerHTML = '';
+
+        characters.forEach((char, index) => {
+            const cls = Character.getClass(char.class);
+            const div = document.createElement('div');
+            div.className = `char-slot ${activeChar && activeChar.id === char.id ? 'active' : ''}`;
+            div.innerHTML = `
+                <span class="class-icon">${cls.icon}</span>
+                <div class="char-info">
+                    <span class="char-name">${char.name}</span>
+                    <span class="char-level">Lv. ${char.level} ${cls.name}</span>
+                </div>
+            `;
+            div.addEventListener('click', () => {
+                Character.setActive(index);
+                renderCharacterSlots();
+                updateCharacterInfo();
+                renderSkills();
+                renderTalents();
+            });
+            container.appendChild(div);
+        });
+    }
+
+    /**
+     * Update character info panel
+     */
+    function updateCharacterInfo() {
+        const char = Character.getActive();
+        const infoPanel = document.getElementById('character-info');
+        const equipPanel = document.getElementById('equipment-panel');
+        const statsPanel = document.getElementById('stats-panel');
+
+        if (!infoPanel) return;
+
+        if (!char) {
+            infoPanel.innerHTML = '<h3>No Character</h3><p class="hint">Create a character to begin!</p>';
+            if (equipPanel) equipPanel.classList.add('hidden');
+            if (statsPanel) statsPanel.classList.add('hidden');
+            return;
+        }
+
+        const cls = Character.getClass(char.class);
+        const charIndex = Character.getAll().indexOf(char);
+        const expPercent = (char.exp / char.expToLevel) * 100;
+
+        infoPanel.innerHTML = `
+            <div class="char-portrait">${cls.icon}</div>
+            <h3>${char.name}</h3>
+            <div class="char-class">${cls.name}</div>
+            <div class="level-display">
+                <span class="level">Level ${char.level}</span>
+            </div>
+            <div class="exp-bar">
+                <div class="fill" style="width: ${expPercent}%"></div>
+                <span>${char.exp}/${char.expToLevel} XP</span>
+            </div>
+            <div class="hp-bar">
+                <div class="hp-fill" style="width: ${(char.hp / char.maxHp) * 100}%"></div>
+                <span>❤️ ${char.hp}/${char.maxHp}</span>
+            </div>
+        `;
+
+        if (equipPanel) equipPanel.classList.remove('hidden');
+        if (statsPanel) statsPanel.classList.remove('hidden');
+
+        // Update stats
+        const statStr = document.getElementById('stat-str');
+        const statAgi = document.getElementById('stat-agi');
+        const statWis = document.getElementById('stat-wis');
+        const statLuk = document.getElementById('stat-luk');
+
+        if (statStr) statStr.textContent = Math.floor(char.stats.str);
+        if (statAgi) statAgi.textContent = Math.floor(char.stats.agi);
+        if (statWis) statWis.textContent = Math.floor(char.stats.wis);
+        if (statLuk) statLuk.textContent = Math.floor(char.stats.luk);
+
+        const combatStats = Combat.getCombatStats(charIndex);
+        if (combatStats) {
+            const combatPower = document.getElementById('combat-power');
+            const critChance = document.getElementById('crit-chance');
+            const defense = document.getElementById('defense');
+
+            if (combatPower) combatPower.textContent = combatStats.power;
+            if (critChance) critChance.textContent = combatStats.critChance + '%';
+            if (defense) defense.textContent = combatStats.defense;
+        }
+
+        updateEquipmentSlots();
+    }
+
+    /**
+     * Update equipment slot display
+     */
+    function updateEquipmentSlots() {
+        const char = Character.getActive();
+        if (!char) return;
+
+        document.querySelectorAll('.equip-slot').forEach(slot => {
+            const slotName = slot.dataset.slot;
+            const itemId = char.equipment[slotName];
+
+            if (itemId) {
+                const item = Inventory.getItemDef(itemId);
+                slot.innerHTML = item ? item.icon : '❓';
+                slot.classList.add('equipped');
+            } else {
+                const defaultIcons = {
+                    helmet: '🪖', weapon: '⚔️', armor: '🛡️',
+                    gloves: '🧤', boots: '👢', ring: '💍', amulet: '📿'
+                };
+                slot.innerHTML = defaultIcons[slotName] || '◻️';
+                slot.classList.remove('equipped');
             }
         });
     }
 
-    function showNotification(message, type = 'default') {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.innerHTML = message;
-        elements.notifications.appendChild(notification);
-        setTimeout(() => notification.remove(), 3000);
+    /**
+     * Render world map zones
+     */
+    function renderZones() {
+        const container = document.getElementById('zones-grid');
+        if (!container) return;
+
+        const zones = World.getAllZones();
+        container.innerHTML = '';
+
+        for (const zoneId in zones) {
+            const zone = zones[zoneId];
+            const unlocked = World.isZoneUnlocked(zoneId);
+
+            const div = document.createElement('div');
+            div.className = `zone-card ${unlocked ? '' : 'locked'}`;
+            div.innerHTML = `
+                <span class="zone-icon">${zone.icon}</span>
+                <div class="zone-name">${zone.name}</div>
+                <div class="zone-level">Req. Lv. ${zone.reqLevel}</div>
+                <div class="zone-activities">
+                    ${zone.activities.map(a => getActivityIcon(a.type)).join('')}
+                </div>
+            `;
+
+            if (unlocked) {
+                div.addEventListener('click', () => showZoneActivities(zoneId));
+            }
+
+            container.appendChild(div);
+        }
     }
 
-    function showAchievementNotification(achievement) {
-        showNotification(
-            `<span style="font-size:1.5rem;">${achievement.icon}</span>
-             <div>
-                <strong>Achievement!</strong><br>
-                ${achievement.name} (+${achievement.reward} ✨)
-             </div>`,
-            'achievement'
-        );
-        renderAchievements();
+    /**
+     * Get icon for activity type
+     */
+    function getActivityIcon(type) {
+        const icons = {
+            mining: '⛏️',
+            woodcutting: '🪓',
+            fishing: '🎣',
+            combat: '⚔️'
+        };
+        return icons[type] || '❓';
     }
 
-    function showEventNotification(event) {
-        showNotification(
-            `<span style="font-size:1.5rem;">${event.icon}</span>
-             <div>
-                <strong>${event.name}</strong><br>
-                ${event.description}
-             </div>`,
-            'event'
-        );
+    /**
+     * Show zone activities
+     */
+    function showZoneActivities(zoneId) {
+        const zone = World.getZone(zoneId);
+        const char = Character.getActive();
+
+        if (!char) {
+            showNotification('Create a character first!', 'error');
+            return;
+        }
+
+        const activityArea = document.getElementById('current-activity');
+        if (!activityArea) return;
+
+        activityArea.classList.remove('hidden');
+
+        let html = `<h4>${zone.name} - Choose Activity:</h4><div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 15px;">`;
+
+        zone.activities.forEach(activity => {
+            const icon = getActivityIcon(activity.type);
+            const label = activity.type.charAt(0).toUpperCase() + activity.type.slice(1);
+            html += `<button class="btn-primary" style="padding: 15px 25px;" onclick="Game.startActivity('${zoneId}', '${activity.type}')">${icon} ${label}</button>`;
+        });
+
+        html += '</div>';
+
+        document.getElementById('activity-content').innerHTML = html;
+        document.getElementById('activity-title').textContent = zone.name;
     }
 
-    function showExpeditionNotification(message) {
-        showNotification(message, 'expedition');
+    /**
+     * Update activity display
+     */
+    function updateActivityDisplay(zoneId, activityType, progress) {
+        const activityArea = document.getElementById('current-activity');
+        const activityContent = document.getElementById('activity-content');
+        const activityTitle = document.getElementById('activity-title');
+
+        if (!activityArea || !activityContent) return;
+
+        activityArea.classList.remove('hidden');
+
+        const zone = World.getZone(zoneId);
+        const icon = getActivityIcon(activityType);
+
+        activityTitle.textContent = `${zone.name} - ${activityType}`;
+
+        activityContent.innerHTML = `
+            <div style="text-align: center; margin-bottom: 15px;">
+                <span style="font-size: 3rem;">${icon}</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progress * 100}%"></div>
+                <span>${Math.floor(progress * 100)}%</span>
+            </div>
+        `;
     }
 
-    function showArtifactNotification(artifact) {
-        showNotification(
-            `<span style="font-size:1.5rem;">${artifact.icon}</span>
-             <div>
-                <strong>Artifact Found!</strong><br>
-                ${artifact.name} (${artifact.rarity})
-             </div>`,
-            'artifact'
-        );
+    /**
+     * Hide activity display
+     */
+    function hideActivityDisplay() {
+        const activityArea = document.getElementById('current-activity');
+        if (activityArea) activityArea.classList.add('hidden');
     }
 
-    function crystalClickAnimation() {
-        const crystal = document.getElementById('main-crystal');
-        crystal.classList.add('clicked');
-        setTimeout(() => crystal.classList.remove('clicked'), 150);
+    /**
+     * Setup inventory filters
+     */
+    function setupInventoryFilters() {
+        document.querySelectorAll('.inventory-filters .filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentInventoryFilter = btn.dataset.filter;
+                document.querySelectorAll('.inventory-filters .filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderInventory();
+            });
+        });
     }
 
+    /**
+     * Render inventory
+     */
+    function renderInventory() {
+        const container = document.getElementById('inventory-grid');
+        if (!container) return;
+
+        const items = Inventory.getAll();
+        const allDefs = Inventory.getAllItemDefs();
+
+        container.innerHTML = '';
+
+        for (const itemId in items) {
+            const quantity = items[itemId];
+            const def = allDefs[itemId];
+
+            if (!def) continue;
+            if (currentInventoryFilter !== 'all' && def.type !== currentInventoryFilter) continue;
+
+            const div = document.createElement('div');
+            div.className = `inventory-slot rarity-${def.rarity}`;
+            div.innerHTML = `
+                ${def.icon}
+                ${quantity > 1 ? `<span class="quantity">${quantity}</span>` : ''}
+            `;
+            div.addEventListener('mouseenter', (e) => showItemTooltip(e, def));
+            div.addEventListener('mouseleave', hideTooltip);
+            div.addEventListener('click', () => handleItemClick(itemId));
+            container.appendChild(div);
+        }
+    }
+
+    /**
+     * Handle item click
+     */
+    function handleItemClick(itemId) {
+        const def = Inventory.getItemDef(itemId);
+        if (!def) return;
+
+        const charIndex = Character.getAll().indexOf(Character.getActive());
+        if (charIndex < 0) return;
+
+        if (def.type === 'equipment') {
+            if (Inventory.equipItem(itemId, charIndex)) {
+                showNotification(`Equipped ${def.name}!`, 'success');
+                updateCharacterInfo();
+                renderInventory();
+            }
+        } else if (def.type === 'consumable') {
+            const effects = Inventory.useItem(itemId, charIndex);
+            if (effects) {
+                showNotification(`Used ${def.name}!`, 'success');
+                updateCharacterInfo();
+                renderInventory();
+            }
+        }
+    }
+
+    /**
+     * Show item tooltip
+     */
+    function showItemTooltip(event, item) {
+        const tooltip = document.getElementById('item-tooltip');
+        if (!tooltip) return;
+
+        tooltip.classList.remove('hidden');
+
+        let statsHtml = '';
+        if (item.stats) {
+            statsHtml = '<div class="item-stats">';
+            for (const stat in item.stats) {
+                statsHtml += `<div>+${item.stats[stat]} ${stat.toUpperCase()}</div>`;
+            }
+            statsHtml += '</div>';
+        }
+
+        tooltip.innerHTML = `
+            <div class="item-name" style="color: ${Inventory.getRarityColor(item.rarity)}">${item.name}</div>
+            <div class="item-type">${item.type} - ${item.rarity}</div>
+            ${statsHtml}
+            <div class="item-value">💰 ${item.value}</div>
+        `;
+
+        tooltip.style.left = event.pageX + 10 + 'px';
+        tooltip.style.top = event.pageY + 10 + 'px';
+    }
+
+    /**
+     * Hide tooltip
+     */
+    function hideTooltip() {
+        const tooltip = document.getElementById('item-tooltip');
+        if (tooltip) tooltip.classList.add('hidden');
+    }
+
+    /**
+     * Setup quest filters
+     */
+    function setupQuestFilters() {
+        document.querySelectorAll('.quest-filters .filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentQuestFilter = btn.dataset.filter;
+                document.querySelectorAll('.quest-filters .filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderQuests();
+            });
+        });
+    }
+
+    /**
+     * Render quests
+     */
+    function renderQuests() {
+        const container = document.getElementById('quests-list');
+        if (!container) return;
+
+        let quests = Quests.getAllQuests();
+
+        if (currentQuestFilter === 'active') {
+            quests = quests.filter(q => q.status === 'active');
+        } else if (currentQuestFilter === 'available') {
+            quests = quests.filter(q => q.status === 'available' && !q.completed);
+        } else if (currentQuestFilter === 'completed') {
+            quests = quests.filter(q => q.completed);
+        }
+
+        container.innerHTML = '';
+
+        if (quests.length === 0) {
+            container.innerHTML = '<p class="hint">No quests found.</p>';
+            return;
+        }
+
+        quests.forEach(quest => {
+            const div = document.createElement('div');
+            div.className = `quest-card ${quest.status === 'complete' ? 'complete' : ''}`;
+
+            let objectivesHtml = quest.objectives.map(obj => {
+                const complete = obj.current >= obj.amount;
+                return `<div class="quest-objective ${complete ? 'complete' : ''}">
+                    ${complete ? '✓' : '○'} ${getObjectiveText(obj)} (${obj.current}/${obj.amount})
+                </div>`;
+            }).join('');
+
+            let buttonHtml = '';
+            if (quest.status === 'available' && !quest.completed) {
+                buttonHtml = `<button class="quest-btn accept" onclick="Game.acceptQuest('${quest.id}')">Accept Quest</button>`;
+            } else if (quest.status === 'complete') {
+                buttonHtml = `<button class="quest-btn complete" onclick="Game.completeQuest('${quest.id}')">Complete Quest</button>`;
+            }
+
+            div.innerHTML = `
+                <div class="quest-header">
+                    <span class="quest-name">${quest.name}</span>
+                    <span class="quest-type">${quest.type}</span>
+                </div>
+                <div class="quest-description">${quest.description}</div>
+                <div class="quest-objectives">${objectivesHtml}</div>
+                <div class="quest-rewards">
+                    ${quest.rewards.exp ? `📈 ${quest.rewards.exp} XP` : ''}
+                    ${quest.rewards.gold ? `💰 ${quest.rewards.gold}` : ''}
+                </div>
+                ${buttonHtml}
+            `;
+
+            container.appendChild(div);
+        });
+    }
+
+    /**
+     * Get objective text
+     */
+    function getObjectiveText(obj) {
+        if (obj.type === 'kill') {
+            const monster = World.getMonster(obj.monsterId);
+            return `Defeat ${monster ? monster.name : obj.monsterId}`;
+        } else if (obj.type === 'gather') {
+            const item = Inventory.getItemDef(obj.itemId);
+            return `Collect ${item ? item.name : obj.itemId}`;
+        } else if (obj.type === 'skill_level') {
+            return `Reach ${obj.skillId} level ${obj.amount}`;
+        }
+        return 'Unknown objective';
+    }
+
+    /**
+     * Render skills
+     */
+    function renderSkills() {
+        const container = document.getElementById('skills-grid');
+        if (!container) return;
+
+        const char = Character.getActive();
+
+        if (!char) {
+            container.innerHTML = '<p class="hint">Create a character to view skills.</p>';
+            return;
+        }
+
+        const skillDefs = Skills.getSkillDefs();
+        const charSkills = Skills.getAllSkills(char.id);
+
+        container.innerHTML = '';
+
+        for (const skillId in skillDefs) {
+            const def = skillDefs[skillId];
+            const skill = charSkills[skillId];
+            const expPercent = (skill.exp / skill.expToLevel) * 100;
+
+            const div = document.createElement('div');
+            div.className = 'skill-card';
+            div.innerHTML = `
+                <div class="skill-header">
+                    <span class="skill-icon">${def.icon}</span>
+                    <span class="skill-name">${def.name}</span>
+                    <span class="skill-level">Lv. ${skill.level}</span>
+                </div>
+                <div class="skill-exp-bar">
+                    <div class="fill" style="width: ${expPercent}%"></div>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+    }
+
+    /**
+     * Setup talent tabs
+     */
+    function setupTalentTabs() {
+        document.querySelectorAll('.tree-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentTalentTree = btn.dataset.tree;
+                document.querySelectorAll('.tree-tab').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderTalents();
+            });
+        });
+    }
+
+    /**
+     * Render talents
+     */
+    function renderTalents() {
+        const container = document.getElementById('talent-tree-content');
+        if (!container) return;
+
+        const char = Character.getActive();
+
+        if (!char) {
+            container.innerHTML = '<p class="hint">Create a character to view talents.</p>';
+            return;
+        }
+
+        const trees = Talents.getTrees();
+        const tree = trees[currentTalentTree];
+        const points = Talents.getPoints(char.id);
+
+        const pointsDisplay = document.getElementById('talent-points');
+        if (pointsDisplay) pointsDisplay.textContent = points;
+
+        container.innerHTML = '';
+
+        for (const talentId in tree.talents) {
+            const talent = tree.talents[talentId];
+            const level = Talents.getTalentLevel(char.id, talentId);
+            const cost = talent.cost(level);
+            const isMaxed = level >= talent.maxLevel;
+            const canAfford = points >= cost;
+            const prereqMet = !talent.prereq || Talents.getTalentLevel(char.id, talent.prereq) > 0;
+
+            const div = document.createElement('div');
+            div.className = `talent-node ${isMaxed ? 'maxed' : ''} ${!prereqMet ? 'locked' : ''}`;
+            div.innerHTML = `
+                <div class="talent-icon">${talent.icon}</div>
+                <div class="talent-name">${talent.name}</div>
+                <div class="talent-level">${level}/${talent.maxLevel}</div>
+                ${!isMaxed ? `<div class="talent-cost">Cost: ${cost}</div>` : ''}
+            `;
+            div.title = talent.description;
+
+            if (!isMaxed && prereqMet && canAfford) {
+                div.style.cursor = 'pointer';
+                div.addEventListener('click', () => {
+                    if (Talents.allocate(char.id, currentTalentTree, talentId)) {
+                        renderTalents();
+                        updateCharacterInfo();
+                    }
+                });
+            }
+
+            container.appendChild(div);
+        }
+    }
+
+    /**
+     * Update gold display
+     */
+    function updateGold() {
+        const goldDisplay = document.getElementById('gold-display');
+        if (goldDisplay) {
+            goldDisplay.textContent = formatNumber(Inventory.getGold());
+        }
+    }
+
+    /**
+     * Show notification
+     */
+    function showNotification(message, type = 'info') {
+        const container = document.getElementById('notifications');
+        if (!container) return;
+
+        const div = document.createElement('div');
+        div.className = `notification ${type}`;
+        div.innerHTML = message;
+        container.appendChild(div);
+
+        setTimeout(() => div.remove(), 3000);
+    }
+
+    /**
+     * Add log entry
+     */
+    function addLogEntry(message) {
+        const log = document.getElementById('log-content');
+        if (!log) return;
+
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        entry.innerHTML = `<span class="time">${new Date().toLocaleTimeString()}</span> ${message}`;
+        log.insertBefore(entry, log.firstChild);
+
+        while (log.children.length > 50) {
+            log.removeChild(log.lastChild);
+        }
+    }
+
+    /**
+     * Update combat display
+     */
+    function updateCombat(charIndex) {
+        const state = Combat.getCombatState(charIndex);
+        const combatPanel = document.getElementById('combat-panel');
+
+        if (!combatPanel) return;
+
+        if (!state) {
+            combatPanel.classList.add('hidden');
+            return;
+        }
+
+        combatPanel.classList.remove('hidden');
+
+        const monster = state.monster;
+        const char = Character.getByIndex(charIndex);
+
+        const enemyIcon = document.getElementById('enemy-icon');
+        const enemyName = document.getElementById('enemy-name');
+        const enemyLevel = document.getElementById('enemy-level');
+        const enemyHpFill = document.getElementById('enemy-hp-fill');
+        const enemyHpText = document.getElementById('enemy-hp-text');
+        const playerHpFill = document.getElementById('player-hp-fill');
+        const playerHpText = document.getElementById('player-hp-text');
+
+        if (enemyIcon) enemyIcon.textContent = monster.icon;
+        if (enemyName) enemyName.textContent = monster.name;
+        if (enemyLevel) enemyLevel.textContent = `Lv. ${monster.level}`;
+        if (enemyHpFill) enemyHpFill.style.width = `${(monster.currentHp / monster.hp) * 100}%`;
+        if (enemyHpText) enemyHpText.textContent = `${Math.max(0, monster.currentHp)}/${monster.hp}`;
+
+        if (char && playerHpFill) playerHpFill.style.width = `${(char.hp / char.maxHp) * 100}%`;
+        if (char && playerHpText) playerHpText.textContent = `${char.hp}/${char.maxHp}`;
+    }
+
+    /**
+     * Add combat message
+     */
+    function addCombatMessage(message, type) {
+        const log = document.getElementById('combat-log');
+        if (!log) return;
+
+        const div = document.createElement('div');
+        div.className = `combat-msg ${type}`;
+        div.textContent = message;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+
+        while (log.children.length > 50) {
+            log.removeChild(log.firstChild);
+        }
+    }
+
+    /**
+     * Add loot item display
+     */
+    function addLootItem(itemId) {
+        const def = Inventory.getItemDef(itemId);
+        if (!def) return;
+
+        const list = document.getElementById('loot-list');
+        if (!list) return;
+
+        const div = document.createElement('div');
+        div.className = 'loot-item';
+        div.innerHTML = `${def.icon} ${def.name}`;
+        list.insertBefore(div, list.firstChild);
+
+        while (list.children.length > 10) {
+            list.removeChild(list.lastChild);
+        }
+    }
+
+    /**
+     * Format large numbers
+     */
+    function formatNumber(num) {
+        if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+        if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+        if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+        return Math.floor(num).toString();
+    }
+
+    // Public API
     return {
         init,
-        updateResources,
-        updateStats,
-        renderBuildings,
-        renderUpgrades,
-        renderAchievements,
-        renderExpeditions,
-        renderArtifacts,
-        renderPrestige,
-        updateEventBanner,
-        updateActiveBonuses,
+        renderCharacterSlots,
+        updateCharacterInfo,
+        renderZones,
+        renderInventory,
+        renderQuests,
+        renderSkills,
+        renderTalents,
+        updateGold,
         showNotification,
-        showAchievementNotification,
-        showEventNotification,
-        showExpeditionNotification,
-        showArtifactNotification,
-        crystalClickAnimation
+        addLogEntry,
+        updateCombat,
+        addCombatMessage,
+        addLootItem,
+        switchTab,
+        showZoneActivities,
+        updateActivityDisplay,
+        hideActivityDisplay,
+        formatNumber
     };
 })();

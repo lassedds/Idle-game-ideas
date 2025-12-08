@@ -1,19 +1,26 @@
 /**
- * Main Game Module
+ * Main Game Module - Idle Legends
  * Initializes the game and runs the main game loop
  */
 
 const Game = (function() {
     let lastTick = Date.now();
-    let lastPassiveParticle = 0;
-    let lastUIUpdate = 0;
     let isRunning = false;
+
+    // Current activity state
+    let currentActivity = {
+        charIndex: -1,
+        zoneId: null,
+        type: null,
+        progress: 0,
+        timePerAction: 3
+    };
 
     /**
      * Initialize the game
      */
     function init() {
-        console.log('Crystal Clicker initializing...');
+        console.log('Idle Legends initializing...');
 
         // Initialize UI
         UI.init();
@@ -24,212 +31,210 @@ const Game = (function() {
             console.log('Starting new game');
         }
 
-        // Setup event listeners
-        setupEventListeners();
+        // Setup stop activity button
+        const stopBtn = document.getElementById('stop-activity-btn');
+        if (stopBtn) {
+            stopBtn.addEventListener('click', stopActivity);
+        }
 
         // Start auto-save
         SaveSystem.startAutoSave();
 
-        // Initial UI update
-        UI.updateResources();
-        UI.updateStats();
-        UI.renderBuildings();
-        UI.renderUpgrades();
-        UI.renderAchievements();
-        UI.renderExpeditions();
-        UI.renderArtifacts();
-        UI.renderPrestige();
+        // Initial UI render
+        UI.renderCharacterSlots();
+        UI.updateCharacterInfo();
+        UI.renderZones();
+        UI.renderInventory();
+        UI.renderQuests();
+        UI.renderSkills();
+        UI.renderTalents();
+        UI.updateGold();
 
         // Start game loop
         isRunning = true;
         requestAnimationFrame(gameLoop);
 
-        console.log('Crystal Clicker initialized!');
+        console.log('Idle Legends initialized!');
     }
 
     /**
-     * Setup event listeners
+     * Start an activity (mining, combat, etc.)
      */
-    function setupEventListeners() {
-        // Main crystal click
-        const crystal = document.getElementById('main-crystal');
-        crystal.addEventListener('click', handleCrystalClick);
-
-        // Also handle touch for mobile
-        crystal.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handleCrystalClick(e.touches[0]);
-        });
-
-        // Save button
-        document.getElementById('save-btn').addEventListener('click', () => {
-            SaveSystem.save();
-        });
-
-        // Reset button
-        document.getElementById('reset-btn').addEventListener('click', () => {
-            SaveSystem.reset();
-        });
-
-        // Save on page unload
-        window.addEventListener('beforeunload', () => {
-            SaveSystem.save();
-        });
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Space to click
-            if (e.code === 'Space' && e.target === document.body) {
-                e.preventDefault();
-                const rect = crystal.getBoundingClientRect();
-                const fakeEvent = {
-                    clientX: rect.left + rect.width / 2,
-                    clientY: rect.top + rect.height / 2
-                };
-                handleCrystalClick(fakeEvent);
-            }
-
-            // S to save
-            if (e.code === 'KeyS' && e.ctrlKey) {
-                e.preventDefault();
-                SaveSystem.save();
-            }
-        });
-    }
-
-    /**
-     * Handle crystal click
-     * @param {Event} event - Click or touch event
-     */
-    function handleCrystalClick(event) {
-        // Process the click
-        const clickValue = Resources.processClick();
-
-        // Visual feedback
-        UI.crystalClickAnimation();
-        Particles.createClickEffect(clickValue, event);
-
-        // Check achievements
-        checkAndShowAchievements();
-    }
-
-    /**
-     * Buy a building
-     * @param {string} buildingId - Building identifier
-     */
-    function buyBuilding(buildingId) {
-        if (Buildings.purchase(buildingId)) {
-            UI.renderBuildings();
-            UI.updateResources();
-            checkAndShowAchievements();
-        }
-    }
-
-    /**
-     * Buy an upgrade
-     * @param {string} upgradeId - Upgrade identifier
-     */
-    function buyUpgrade(upgradeId) {
-        if (Upgrades.purchase(upgradeId)) {
-            UI.renderUpgrades();
-            UI.renderBuildings(); // Update building production display
-            UI.updateResources();
-            checkAndShowAchievements();
-        }
-    }
-
-    /**
-     * Start an expedition
-     * @param {string} destinationId - Destination identifier
-     */
-    function startExpedition(destinationId) {
-        if (typeof Expeditions !== 'undefined' && Expeditions.start(destinationId)) {
-            UI.renderExpeditions();
-            UI.updateResources();
-            UI.showNotification('🚀 Expedition started!');
-        }
-    }
-
-    /**
-     * Claim an expedition reward
-     * @param {number} index - Reward index
-     */
-    function claimExpeditionReward(index) {
-        if (typeof Expeditions === 'undefined') return;
-
-        const reward = Expeditions.claimReward(index);
-        if (reward) {
-            UI.renderExpeditions();
-            UI.renderArtifacts();
-            UI.updateResources();
-            UI.updateActiveBonuses();
-
-            // Show reward notification
-            let message = `🎉 Expedition Complete!<br>💎 +${Resources.formatNumber(reward.rewards.crystals)} crystals`;
-            if (reward.rewards.gems > 0) {
-                message += `<br>💠 +${reward.rewards.gems} gems`;
-            }
-            if (reward.rewards.artifact) {
-                message += `<br>🎁 Found: ${reward.rewards.artifact.name}!`;
-            }
-            if (reward.rewards.bonus) {
-                message += `<br>✨ ${reward.rewards.bonus.type} bonus activated!`;
-            }
-            UI.showNotification(message);
-
-            checkAndShowAchievements();
-        }
-    }
-
-    /**
-     * Buy a prestige upgrade
-     * @param {string} upgradeId - Prestige upgrade identifier
-     */
-    function buyPrestigeUpgrade(upgradeId) {
-        if (typeof Prestige !== 'undefined' && Prestige.buyUpgrade(upgradeId)) {
-            UI.renderPrestige();
-            UI.showNotification('⭐ Prestige upgrade purchased!');
-        }
-    }
-
-    /**
-     * Perform prestige reset
-     */
-    function performPrestige() {
-        if (typeof Prestige === 'undefined') return;
-
-        const earned = Prestige.calculateStardustEarned();
-        if (earned <= 0) {
-            UI.showNotification('❌ Not enough crystals to prestige!');
+    function startActivity(zoneId, activityType) {
+        const char = Character.getActive();
+        if (!char) {
+            UI.showNotification('Create a character first!', 'error');
             return;
         }
 
-        if (!window.confirm(`Prestige for ${earned} Stardust? This will reset your progress but keep artifacts.`)) {
-            return;
+        const charIndex = Character.getAll().indexOf(char);
+        const zone = World.getZone(zoneId);
+        const activity = zone.activities.find(a => a.type === activityType);
+
+        if (!activity) return;
+
+        currentActivity = {
+            charIndex,
+            zoneId,
+            type: activityType,
+            progress: 0,
+            timePerAction: activity.timePerAction || 3,
+            expPerAction: activity.expPerAction || 10,
+            resource: activity.resource,
+            monsters: activity.monsters
+        };
+
+        Character.setActivity(charIndex, activityType, zoneId);
+
+        if (activityType === 'combat') {
+            Combat.startCombat(charIndex, zoneId);
         }
 
-        if (Prestige.performPrestige()) {
-            // Re-render everything after prestige
-            UI.renderBuildings();
-            UI.renderUpgrades();
-            UI.renderAchievements();
-            UI.renderExpeditions();
-            UI.renderPrestige();
-            UI.updateResources();
-            UI.updateStats();
-            UI.showNotification(`✨ Prestige complete! Earned ${earned} Stardust!`);
+        UI.addLogEntry(`Started ${activityType} in ${zone.name}`);
+    }
+
+    /**
+     * Stop current activity
+     */
+    function stopActivity() {
+        if (currentActivity.type === 'combat') {
+            const result = Combat.stopCombat(currentActivity.charIndex);
+            if (result) {
+                UI.addLogEntry(`Combat ended: ${result.killCount} kills, ${result.totalExp} XP, ${result.totalGold} gold`);
+            }
+        }
+
+        currentActivity = {
+            charIndex: -1,
+            zoneId: null,
+            type: null,
+            progress: 0,
+            timePerAction: 3
+        };
+
+        UI.hideActivityDisplay();
+        UI.showNotification('Activity stopped');
+    }
+
+    /**
+     * Accept a quest
+     */
+    function acceptQuest(questId) {
+        if (Quests.acceptQuest(questId)) {
+            UI.showNotification('Quest accepted!', 'success');
+            UI.renderQuests();
         }
     }
 
     /**
-     * Check achievements and show notifications
+     * Complete a quest
      */
-    function checkAndShowAchievements() {
-        const newAchievements = Achievements.checkAchievements();
-        newAchievements.forEach(achievement => {
-            UI.showAchievementNotification(achievement);
-            Particles.createAchievementEffect();
-        });
+    function completeQuest(questId) {
+        const rewards = Quests.completeQuest(questId);
+        if (rewards) {
+            UI.showNotification(`Quest complete! +${rewards.exp} XP, +${rewards.gold} gold`, 'success');
+            UI.renderQuests();
+            UI.updateCharacterInfo();
+            UI.updateGold();
+            UI.renderInventory();
+        }
+    }
+
+    /**
+     * Process gathering activity
+     */
+    function processGathering(deltaTime) {
+        if (!currentActivity.type || currentActivity.type === 'combat') return;
+
+        const char = Character.getByIndex(currentActivity.charIndex);
+        if (!char) return;
+
+        // Get skill efficiency
+        const efficiency = Skills.getEfficiency(char.id, currentActivity.type);
+        const progressPerSecond = efficiency / currentActivity.timePerAction;
+
+        currentActivity.progress += progressPerSecond * deltaTime;
+
+        // Check if action completed
+        if (currentActivity.progress >= 1) {
+            currentActivity.progress = 0;
+
+            // Give resource
+            if (currentActivity.resource) {
+                const yieldBonus = Skills.getYieldBonus(char.id, currentActivity.type);
+                let amount = Math.floor(yieldBonus);
+                if (Math.random() < (yieldBonus - amount)) amount++;
+
+                Inventory.addItem(currentActivity.resource, Math.max(1, amount));
+                UI.addLootItem(currentActivity.resource);
+
+                // Update quest progress
+                Quests.updateProgress('gather', currentActivity.resource, Math.max(1, amount));
+            }
+
+            // Give skill XP
+            Skills.addExp(char.id, currentActivity.type, currentActivity.expPerAction);
+
+            // Update UI
+            UI.renderSkills();
+            UI.renderInventory();
+            UI.renderQuests();
+        }
+
+        // Update activity display
+        UI.updateActivityDisplay(currentActivity.zoneId, currentActivity.type, currentActivity.progress);
+    }
+
+    /**
+     * Process combat
+     */
+    function processCombat(deltaTime) {
+        if (currentActivity.type !== 'combat') return;
+
+        const results = Combat.processTick(currentActivity.charIndex, deltaTime);
+        if (!results) return;
+
+        for (const result of results) {
+            if (result.type === 'playerAttack') {
+                const msg = result.isCrit ?
+                    `CRIT! You deal ${result.damage} damage!` :
+                    `You deal ${result.damage} damage`;
+                UI.addCombatMessage(msg, result.isCrit ? 'crit' : 'player-hit');
+            } else if (result.type === 'monsterAttack') {
+                UI.addCombatMessage(`Enemy deals ${result.damage} damage!`, 'enemy-hit');
+            } else if (result.type === 'monsterDeath') {
+                UI.addCombatMessage(`Defeated ${result.monster.name}! +${result.exp} XP, +${result.gold} gold`, 'player-hit');
+
+                // Update quest progress
+                Quests.updateProgress('kill', result.monster.id, 1);
+
+                // Add loot
+                for (const itemId of result.drops) {
+                    UI.addLootItem(itemId);
+                }
+
+                // Check for zone unlocks
+                if (result.newUnlocks && result.newUnlocks.length > 0) {
+                    for (const zone of result.newUnlocks) {
+                        UI.showNotification(`New zone unlocked: ${zone.name}!`, 'success');
+                    }
+                    UI.renderZones();
+                }
+            } else if (result.type === 'monsterSpawn') {
+                UI.addCombatMessage(`A ${result.monster.name} appears!`, '');
+            } else if (result.type === 'playerDeath') {
+                UI.showNotification('You died! Respawning...', 'error');
+                Character.respawn(currentActivity.charIndex);
+                stopActivity();
+            }
+        }
+
+        // Update UI
+        UI.updateCombat(currentActivity.charIndex);
+        UI.updateCharacterInfo();
+        UI.updateGold();
+        UI.renderInventory();
+        UI.renderQuests();
     }
 
     /**
@@ -239,86 +244,44 @@ const Game = (function() {
         if (!isRunning) return;
 
         const now = Date.now();
-        const deltaTime = (now - lastTick) / 1000; // Convert to seconds
+        const deltaTime = (now - lastTick) / 1000;
         lastTick = now;
 
-        // Process passive income
-        Resources.processTick(deltaTime);
-
-        // Update play time
-        GameState.updatePlayTime();
-
-        // Apply synergy bonuses
-        Upgrades.applySynergyBonuses();
-
-        // Check for random events
-        if (typeof Events !== 'undefined') {
-            const newEvent = Events.checkForEvent();
-            if (newEvent) {
-                UI.updateEventBanner();
-                UI.showNotification(`${newEvent.icon} ${newEvent.name}!<br>${newEvent.description}`);
+        // Process current activity
+        if (currentActivity.type) {
+            if (currentActivity.type === 'combat') {
+                processCombat(deltaTime);
+            } else {
+                processGathering(deltaTime);
             }
         }
 
-        // Check for completed expeditions
-        if (typeof Expeditions !== 'undefined') {
-            if (Expeditions.checkCompletions()) {
-                UI.renderExpeditions();
-                UI.showNotification('📦 An expedition has returned!');
-            }
-        }
+        // Process passive regen for all characters
+        Character.getAll().forEach((_, i) => {
+            Combat.processRegen(i, deltaTime);
+        });
 
-        // Update UI (throttled)
-        UI.updateResources();
-
-        // Update event banner and active bonuses frequently
-        if (now - lastUIUpdate > 500) {
-            lastUIUpdate = now;
-            UI.updateEventBanner();
-            UI.updateActiveBonuses();
-        }
-
-        // Update stats every second
+        // Periodic UI updates (every second)
         if (Math.floor(now / 1000) !== Math.floor((now - deltaTime * 1000) / 1000)) {
-            UI.updateStats();
+            UI.updateCharacterInfo();
+            UI.updateGold();
 
-            // Check for new buildings to unlock
-            const visibleBuildings = document.querySelectorAll('[data-building]').length;
-            const totalUnlocked = Buildings.getAll().filter(b => Buildings.isUnlocked(b.id)).length;
-            if (totalUnlocked > visibleBuildings) {
-                UI.renderBuildings();
-            }
-
-            // Check for new upgrades to unlock
-            UI.renderUpgrades();
-
-            // Check achievements periodically
-            checkAndShowAchievements();
-
-            // Update expeditions display (progress bars)
-            if (typeof Expeditions !== 'undefined') {
-                UI.renderExpeditions();
-            }
-
-            // Update prestige display
-            if (typeof Prestige !== 'undefined') {
-                UI.renderPrestige();
+            // Check for zone unlocks based on highest character level
+            const chars = Character.getAll();
+            if (chars.length > 0) {
+                const maxLevel = Math.max(...chars.map(c => c.level));
+                const newZones = World.checkUnlocks(maxLevel);
+                if (newZones.length > 0) {
+                    UI.renderZones();
+                }
             }
         }
 
-        // Passive particles (when CPS > 0)
-        const cps = Resources.calculateCPS();
-        if (cps > 0 && now - lastPassiveParticle > Math.max(100, 1000 / Math.min(cps, 10))) {
-            Particles.createPassiveParticle();
-            lastPassiveParticle = now;
-        }
-
-        // Continue loop
         requestAnimationFrame(gameLoop);
     }
 
     /**
-     * Stop the game loop
+     * Stop the game
      */
     function stop() {
         isRunning = false;
@@ -328,12 +291,10 @@ const Game = (function() {
     // Public API
     return {
         init,
-        buyBuilding,
-        buyUpgrade,
-        startExpedition,
-        claimExpeditionReward,
-        buyPrestigeUpgrade,
-        performPrestige,
+        startActivity,
+        stopActivity,
+        acceptQuest,
+        completeQuest,
         stop
     };
 })();
