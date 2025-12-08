@@ -188,7 +188,8 @@ const Buildings = (function() {
         if (!building) return 0;
 
         const count = GameState.getBuildingCount(buildingId);
-        return building.production * count * GameState.getProductionMultiplier();
+        const buildingMultiplier = GameState.getBuildingMultiplier(buildingId);
+        return building.production * count * buildingMultiplier * GameState.getProductionMultiplier();
     }
 
     /**

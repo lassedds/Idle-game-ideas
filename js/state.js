@@ -12,9 +12,17 @@ const GameState = (function() {
             totalCrystals: 0,
             totalClicks: 0
         },
-        clickPower: 1,
-        clickMultiplier: 1,
-        productionMultiplier: 1,
+        // Base values (before upgrades)
+        baseClickPower: 1,
+        baseProductionMultiplier: 1,
+        // Upgrade multipliers (calculated from purchased upgrades)
+        clickUpgradeMultiplier: 1,
+        productionUpgradeMultiplier: 1,
+        // Synergy multiplier (calculated dynamically)
+        clickSynergyMultiplier: 1,
+        productionSynergyMultiplier: 1,
+        // Building-specific multipliers
+        buildingMultipliers: {},
         buildings: {},
         upgrades: {},
         achievements: {},
@@ -28,7 +36,7 @@ const GameState = (function() {
             autoSave: true,
             notifications: true
         },
-        version: '1.0.0'
+        version: '1.1.0'
     };
 
     // Current game state
@@ -46,8 +54,6 @@ const GameState = (function() {
 
     /**
      * Subscribe to state changes
-     * @param {string} event - Event type to listen for
-     * @param {function} callback - Function to call when event occurs
      */
     function subscribe(event, callback) {
         if (listeners[event]) {
@@ -57,8 +63,6 @@ const GameState = (function() {
 
     /**
      * Emit an event to all listeners
-     * @param {string} event - Event type
-     * @param {*} data - Data to pass to listeners
      */
     function emit(event, data) {
         if (listeners[event]) {
@@ -89,8 +93,6 @@ const GameState = (function() {
 
     /**
      * Add crystals to the player's total
-     * @param {number} amount - Amount to add
-     * @param {boolean} countAsEarned - Whether to count towards total earned
      */
     function addCrystals(amount, countAsEarned = true) {
         state.resources.crystals += amount;
@@ -105,8 +107,6 @@ const GameState = (function() {
 
     /**
      * Spend crystals
-     * @param {number} amount - Amount to spend
-     * @returns {boolean} - Whether the transaction was successful
      */
     function spendCrystals(amount) {
         if (state.resources.crystals >= amount) {
@@ -119,7 +119,6 @@ const GameState = (function() {
 
     /**
      * Add gems
-     * @param {number} amount - Amount to add
      */
     function addGems(amount) {
         state.resources.gems += amount;
@@ -135,46 +134,63 @@ const GameState = (function() {
     }
 
     /**
-     * Get click power (base + bonuses)
+     * Get effective click power (base * upgrades * synergy)
      */
     function getClickPower() {
-        return state.clickPower * state.clickMultiplier;
+        return state.baseClickPower * state.clickUpgradeMultiplier * state.clickSynergyMultiplier;
     }
 
     /**
-     * Set click power
-     * @param {number} power - New click power
+     * Multiply click upgrade multiplier
      */
-    function setClickPower(power) {
-        state.clickPower = power;
+    function multiplyClickPower(multiplier) {
+        state.clickUpgradeMultiplier *= multiplier;
     }
 
     /**
-     * Set click multiplier
-     * @param {number} multiplier - New multiplier
+     * Set click synergy multiplier (recalculated each frame)
      */
-    function setClickMultiplier(multiplier) {
-        state.clickMultiplier = multiplier;
+    function setClickSynergyMultiplier(multiplier) {
+        state.clickSynergyMultiplier = multiplier;
     }
 
     /**
-     * Get production multiplier
+     * Get effective production multiplier
      */
     function getProductionMultiplier() {
-        return state.productionMultiplier;
+        return state.baseProductionMultiplier * state.productionUpgradeMultiplier * state.productionSynergyMultiplier;
     }
 
     /**
-     * Set production multiplier
-     * @param {number} multiplier - New multiplier
+     * Multiply production upgrade multiplier
      */
-    function setProductionMultiplier(multiplier) {
-        state.productionMultiplier = multiplier;
+    function multiplyProductionMultiplier(multiplier) {
+        state.productionUpgradeMultiplier *= multiplier;
+    }
+
+    /**
+     * Set production synergy multiplier (recalculated each frame)
+     */
+    function setProductionSynergyMultiplier(multiplier) {
+        state.productionSynergyMultiplier = multiplier;
+    }
+
+    /**
+     * Get building-specific multiplier
+     */
+    function getBuildingMultiplier(buildingId) {
+        return state.buildingMultipliers[buildingId] || 1;
+    }
+
+    /**
+     * Multiply a building's specific multiplier
+     */
+    function multiplyBuildingMultiplier(buildingId, multiplier) {
+        state.buildingMultipliers[buildingId] = (state.buildingMultipliers[buildingId] || 1) * multiplier;
     }
 
     /**
      * Get building count
-     * @param {string} buildingId - Building identifier
      */
     function getBuildingCount(buildingId) {
         return state.buildings[buildingId] || 0;
@@ -182,7 +198,6 @@ const GameState = (function() {
 
     /**
      * Add a building
-     * @param {string} buildingId - Building identifier
      */
     function addBuilding(buildingId) {
         state.buildings[buildingId] = (state.buildings[buildingId] || 0) + 1;
@@ -191,7 +206,6 @@ const GameState = (function() {
 
     /**
      * Check if upgrade is purchased
-     * @param {string} upgradeId - Upgrade identifier
      */
     function hasUpgrade(upgradeId) {
         return state.upgrades[upgradeId] === true;
@@ -199,7 +213,6 @@ const GameState = (function() {
 
     /**
      * Purchase an upgrade
-     * @param {string} upgradeId - Upgrade identifier
      */
     function purchaseUpgrade(upgradeId) {
         state.upgrades[upgradeId] = true;
@@ -208,7 +221,6 @@ const GameState = (function() {
 
     /**
      * Check if achievement is unlocked
-     * @param {string} achievementId - Achievement identifier
      */
     function hasAchievement(achievementId) {
         return state.achievements[achievementId] === true;
@@ -216,7 +228,6 @@ const GameState = (function() {
 
     /**
      * Unlock an achievement
-     * @param {string} achievementId - Achievement identifier
      */
     function unlockAchievement(achievementId) {
         if (!state.achievements[achievementId]) {
@@ -242,14 +253,38 @@ const GameState = (function() {
     }
 
     /**
+     * Reset upgrade multipliers (called before reapplying upgrades)
+     */
+    function resetUpgradeMultipliers() {
+        state.clickUpgradeMultiplier = 1;
+        state.productionUpgradeMultiplier = 1;
+        state.buildingMultipliers = {};
+    }
+
+    /**
      * Load a saved state
-     * @param {object} savedState - State to load
      */
     function loadState(savedState) {
         if (savedState && savedState.version) {
-            state = { ...defaultState, ...savedState };
+            // Merge with defaults to handle missing fields from older saves
+            state = { ...JSON.parse(JSON.stringify(defaultState)), ...savedState };
+
+            // Ensure nested objects are properly merged
+            state.resources = { ...defaultState.resources, ...savedState.resources };
+            state.stats = { ...defaultState.stats, ...savedState.stats };
+            state.buildings = savedState.buildings || {};
+            state.upgrades = savedState.upgrades || {};
+            state.achievements = savedState.achievements || {};
+            state.buildingMultipliers = savedState.buildingMultipliers || {};
+
+            // Reset multipliers - they will be recalculated by reapplyUpgrades
+            state.clickUpgradeMultiplier = 1;
+            state.productionUpgradeMultiplier = 1;
+            state.buildingMultipliers = {};
+
             // Recalculate start time based on play time
             state.stats.startTime = Date.now() - state.stats.totalPlayTime;
+
             emit('crystals', state.resources.crystals);
             emit('gems', state.resources.gems);
             emit('buildings', state.buildings);
@@ -284,10 +319,13 @@ const GameState = (function() {
         addGems,
         incrementClicks,
         getClickPower,
-        setClickPower,
-        setClickMultiplier,
+        multiplyClickPower,
+        setClickSynergyMultiplier,
         getProductionMultiplier,
-        setProductionMultiplier,
+        multiplyProductionMultiplier,
+        setProductionSynergyMultiplier,
+        getBuildingMultiplier,
+        multiplyBuildingMultiplier,
         getBuildingCount,
         addBuilding,
         hasUpgrade,
@@ -296,6 +334,7 @@ const GameState = (function() {
         unlockAchievement,
         getStats,
         updatePlayTime,
+        resetUpgradeMultipliers,
         loadState,
         resetState
     };

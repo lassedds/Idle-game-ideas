@@ -14,9 +14,9 @@ const Upgrades = (function() {
             description: 'Double your click power.',
             cost: 100,
             type: 'click',
+            multiplier: 2,
             effect: () => {
-                const current = GameState.getClickPower() / GameState.getState().clickMultiplier;
-                GameState.setClickPower(current * 2);
+                GameState.multiplyClickPower(2);
             },
             unlockCondition: () => GameState.getStats().totalClicks >= 50
         },
@@ -27,9 +27,9 @@ const Upgrades = (function() {
             description: 'Triple your click power.',
             cost: 1000,
             type: 'click',
+            multiplier: 3,
             effect: () => {
-                const current = GameState.getClickPower() / GameState.getState().clickMultiplier;
-                GameState.setClickPower(current * 3);
+                GameState.multiplyClickPower(3);
             },
             unlockCondition: () => GameState.hasUpgrade('click1')
         },
@@ -40,9 +40,9 @@ const Upgrades = (function() {
             description: 'Clicks are 5x more powerful.',
             cost: 10000,
             type: 'click',
+            multiplier: 5,
             effect: () => {
-                const current = GameState.getClickPower() / GameState.getState().clickMultiplier;
-                GameState.setClickPower(current * 5);
+                GameState.multiplyClickPower(5);
             },
             unlockCondition: () => GameState.hasUpgrade('click2')
         },
@@ -53,9 +53,9 @@ const Upgrades = (function() {
             description: 'Clicks are 10x more powerful.',
             cost: 100000,
             type: 'click',
+            multiplier: 10,
             effect: () => {
-                const current = GameState.getClickPower() / GameState.getState().clickMultiplier;
-                GameState.setClickPower(current * 10);
+                GameState.multiplyClickPower(10);
             },
             unlockCondition: () => GameState.hasUpgrade('click3')
         },
@@ -68,9 +68,9 @@ const Upgrades = (function() {
             description: 'All buildings produce 25% more.',
             cost: 500,
             type: 'production',
+            multiplier: 1.25,
             effect: () => {
-                const current = GameState.getProductionMultiplier();
-                GameState.setProductionMultiplier(current * 1.25);
+                GameState.multiplyProductionMultiplier(1.25);
             },
             unlockCondition: () => Buildings.getTotalOwned() >= 10
         },
@@ -81,9 +81,9 @@ const Upgrades = (function() {
             description: 'All buildings produce 50% more.',
             cost: 5000,
             type: 'production',
+            multiplier: 1.5,
             effect: () => {
-                const current = GameState.getProductionMultiplier();
-                GameState.setProductionMultiplier(current * 1.5);
+                GameState.multiplyProductionMultiplier(1.5);
             },
             unlockCondition: () => GameState.hasUpgrade('prod1')
         },
@@ -94,9 +94,9 @@ const Upgrades = (function() {
             description: 'Double all production.',
             cost: 50000,
             type: 'production',
+            multiplier: 2,
             effect: () => {
-                const current = GameState.getProductionMultiplier();
-                GameState.setProductionMultiplier(current * 2);
+                GameState.multiplyProductionMultiplier(2);
             },
             unlockCondition: () => GameState.hasUpgrade('prod2')
         },
@@ -107,9 +107,9 @@ const Upgrades = (function() {
             description: 'Triple all production.',
             cost: 500000,
             type: 'production',
+            multiplier: 3,
             effect: () => {
-                const current = GameState.getProductionMultiplier();
-                GameState.setProductionMultiplier(current * 3);
+                GameState.multiplyProductionMultiplier(3);
             },
             unlockCondition: () => GameState.hasUpgrade('prod3')
         },
@@ -123,9 +123,9 @@ const Upgrades = (function() {
             cost: 300,
             type: 'building',
             buildingId: 'miner',
+            multiplier: 2,
             effect: () => {
-                const building = Buildings.getById('miner');
-                if (building) building.production *= 2;
+                GameState.multiplyBuildingMultiplier('miner', 2);
             },
             unlockCondition: () => GameState.getBuildingCount('miner') >= 10
         },
@@ -137,9 +137,9 @@ const Upgrades = (function() {
             cost: 2000,
             type: 'building',
             buildingId: 'drill',
+            multiplier: 2,
             effect: () => {
-                const building = Buildings.getById('drill');
-                if (building) building.production *= 2;
+                GameState.multiplyBuildingMultiplier('drill', 2);
             },
             unlockCondition: () => GameState.getBuildingCount('drill') >= 10
         },
@@ -151,9 +151,9 @@ const Upgrades = (function() {
             cost: 10000,
             type: 'building',
             buildingId: 'excavator',
+            multiplier: 2,
             effect: () => {
-                const building = Buildings.getById('excavator');
-                if (building) building.production *= 2;
+                GameState.multiplyBuildingMultiplier('excavator', 2);
             },
             unlockCondition: () => GameState.getBuildingCount('excavator') >= 10
         },
@@ -165,9 +165,9 @@ const Upgrades = (function() {
             cost: 40000,
             type: 'building',
             buildingId: 'quarry',
+            multiplier: 2,
             effect: () => {
-                const building = Buildings.getById('quarry');
-                if (building) building.production *= 2;
+                GameState.multiplyBuildingMultiplier('quarry', 2);
             },
             unlockCondition: () => GameState.getBuildingCount('quarry') >= 10
         },
@@ -179,23 +179,23 @@ const Upgrades = (function() {
             cost: 200000,
             type: 'building',
             buildingId: 'refinery',
+            multiplier: 2,
             effect: () => {
-                const building = Buildings.getById('refinery');
-                if (building) building.production *= 2;
+                GameState.multiplyBuildingMultiplier('refinery', 2);
             },
             unlockCondition: () => GameState.getBuildingCount('refinery') >= 10
         },
 
-        // Synergy Upgrades
+        // Synergy Upgrades (effects applied dynamically in applySynergyBonuses)
         {
             id: 'synergy1',
             name: 'Crystal Synergy',
             icon: '🔗',
-            description: 'Each building type boosts click power by 1%.',
+            description: 'Each building type boosts click power by 5%.',
             cost: 25000,
             type: 'synergy',
             effect: () => {
-                // Recalculated dynamically in click calculation
+                // Applied dynamically in applySynergyBonuses
             },
             unlockCondition: () => Buildings.getTotalOwned() >= 50
         },
@@ -203,11 +203,11 @@ const Upgrades = (function() {
             id: 'synergy2',
             name: 'Perfect Harmony',
             icon: '☯️',
-            description: 'Each 10 buildings adds +1% to all production.',
+            description: 'Each 10 buildings adds +5% to all production.',
             cost: 250000,
             type: 'synergy',
             effect: () => {
-                // Recalculated dynamically
+                // Applied dynamically in applySynergyBonuses
             },
             unlockCondition: () => Buildings.getTotalOwned() >= 100
         }
@@ -215,7 +215,6 @@ const Upgrades = (function() {
 
     /**
      * Get all upgrades
-     * @returns {Array} - Array of upgrade definitions
      */
     function getAll() {
         return upgrades;
@@ -223,8 +222,6 @@ const Upgrades = (function() {
 
     /**
      * Get a specific upgrade by ID
-     * @param {string} upgradeId - Upgrade identifier
-     * @returns {Object|null} - Upgrade definition or null
      */
     function getById(upgradeId) {
         return upgrades.find(u => u.id === upgradeId) || null;
@@ -232,20 +229,16 @@ const Upgrades = (function() {
 
     /**
      * Check if an upgrade is unlocked (visible to player)
-     * @param {string} upgradeId - Upgrade identifier
-     * @returns {boolean} - Whether upgrade is unlocked
      */
     function isUnlocked(upgradeId) {
         const upgrade = getById(upgradeId);
         if (!upgrade) return false;
-        if (GameState.hasUpgrade(upgradeId)) return true; // Already purchased
+        if (GameState.hasUpgrade(upgradeId)) return true;
         return upgrade.unlockCondition();
     }
 
     /**
      * Check if player can afford an upgrade
-     * @param {string} upgradeId - Upgrade identifier
-     * @returns {boolean} - Whether player can afford it
      */
     function canAfford(upgradeId) {
         const upgrade = getById(upgradeId);
@@ -255,8 +248,6 @@ const Upgrades = (function() {
 
     /**
      * Purchase an upgrade
-     * @param {string} upgradeId - Upgrade identifier
-     * @returns {boolean} - Whether purchase was successful
      */
     function purchase(upgradeId) {
         const upgrade = getById(upgradeId);
@@ -272,7 +263,6 @@ const Upgrades = (function() {
 
     /**
      * Get available (unlocked but not purchased) upgrades
-     * @returns {Array} - Array of available upgrades
      */
     function getAvailable() {
         return upgrades.filter(upgrade =>
@@ -284,7 +274,7 @@ const Upgrades = (function() {
      * Apply synergy bonuses (called during game loop)
      */
     function applySynergyBonuses() {
-        // Synergy 1: Building types boost click
+        // Synergy 1: Building types boost click power
         if (GameState.hasUpgrade('synergy1')) {
             let buildingTypes = 0;
             Buildings.getAll().forEach(building => {
@@ -292,14 +282,20 @@ const Upgrades = (function() {
                     buildingTypes++;
                 }
             });
-            GameState.setClickMultiplier(1 + (buildingTypes * 0.01));
+            // Each building type gives +5% click power
+            GameState.setClickSynergyMultiplier(1 + (buildingTypes * 0.05));
+        } else {
+            GameState.setClickSynergyMultiplier(1);
         }
 
         // Synergy 2: Total buildings boost production
         if (GameState.hasUpgrade('synergy2')) {
             const totalBuildings = Buildings.getTotalOwned();
-            const bonus = Math.floor(totalBuildings / 10) * 0.01;
-            // This adds to the existing production multiplier
+            // Each 10 buildings gives +5% production
+            const bonus = Math.floor(totalBuildings / 10) * 0.05;
+            GameState.setProductionSynergyMultiplier(1 + bonus);
+        } else {
+            GameState.setProductionSynergyMultiplier(1);
         }
     }
 
@@ -307,11 +303,17 @@ const Upgrades = (function() {
      * Reapply all purchased upgrade effects (for loading saves)
      */
     function reapplyUpgrades() {
+        // Reset multipliers first to avoid stacking
+        GameState.resetUpgradeMultipliers();
+
+        // Reapply each purchased upgrade's effect
         upgrades.forEach(upgrade => {
-            if (GameState.hasUpgrade(upgrade.id)) {
+            if (GameState.hasUpgrade(upgrade.id) && upgrade.type !== 'synergy') {
                 upgrade.effect();
             }
         });
+
+        // Synergy bonuses are applied dynamically each frame
     }
 
     // Public API
