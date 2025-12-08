@@ -1,8 +1,8 @@
-# Crystal Clicker
+# Idle Legends
 
-A fun idle/incremental game where you collect crystals, build an empire, and unlock achievements!
+An idle RPG inspired by IdleOn and MapleStory! Create characters, explore zones, fight monsters, level up skills, and progress through an expansive world.
 
-![Game Preview](https://img.shields.io/badge/Genre-Idle%20Game-blue) ![Status](https://img.shields.io/badge/Status-Playable-green)
+![Game Preview](https://img.shields.io/badge/Genre-Idle%20RPG-purple) ![Status](https://img.shields.io/badge/Status-Playable-green)
 
 ## Quick Start
 
@@ -29,25 +29,12 @@ For the best experience, run a local server:
 ```bash
 # Python 3
 python -m http.server 8000
-
-# Python 2
-python -m SimpleHTTPServer 8000
 ```
 Then open http://localhost:8000
 
 **Using Node.js:**
 ```bash
-# Install a simple server (one-time)
-npm install -g http-server
-
-# Run it
-http-server -p 8000
-```
-Then open http://localhost:8000
-
-**Using PHP:**
-```bash
-php -S localhost:8000
+npx http-server -p 8000
 ```
 Then open http://localhost:8000
 
@@ -56,37 +43,96 @@ Install the "Live Server" extension, then right-click `index.html` and select "O
 
 ## How to Play
 
-### Basic Gameplay
+### Getting Started
 
-1. **Click the Crystal** - Click the big crystal in the center to collect crystals
-2. **Buy Buildings** - Use crystals to purchase buildings that generate crystals automatically
-3. **Purchase Upgrades** - Boost your click power and production with upgrades
-4. **Unlock Achievements** - Complete milestones to earn gems
+1. **Create a Character** - Click "+ New Character" and choose a class
+2. **Pick a Zone** - Go to the World tab and select a starting area
+3. **Start an Activity** - Choose to mine, chop wood, fish, or fight monsters
+4. **Level Up** - Gain experience to unlock new zones and become stronger
+5. **Complete Quests** - Accept quests for bonus rewards
 
-### Controls
+### Character Classes
 
-| Action | Control |
-|--------|---------|
-| Collect crystals | Click/tap the crystal |
-| Quick click | Press `Spacebar` |
-| Save game | Press `Ctrl+S` or click Save button |
-| Navigate tabs | Click Buildings/Upgrades/Achievements |
+| Class | Icon | Specialty | Best Stats |
+|-------|------|-----------|------------|
+| Warrior | ⚔️ | Melee combat, high HP | STR |
+| Mage | 🔮 | Magic damage, high mana | WIS |
+| Archer | 🏹 | Ranged attacks, crits | AGI, LUK |
+| Beginner | 👤 | Balanced, versatile | All |
 
-### Tips for Progression
+### Skills
 
-- **Early game**: Focus on clicking and buying Crystal Miners
-- **Mid game**: Prioritize production multiplier upgrades
-- **Late game**: Unlock synergy upgrades for exponential growth
-- **Always**: Keep an eye on achievements for bonus gems!
+Your character has 8 skills that level up through use:
+
+- **Mining** ⛏️ - Extract ores and gems from rocks
+- **Woodcutting** 🪓 - Chop down trees for wood
+- **Fishing** 🎣 - Catch fish from various waters
+- **Combat** ⚔️ - Fight monsters for loot and XP
+- **Smithing** 🔨 - Craft weapons and armor
+- **Alchemy** ⚗️ - Brew potions and elixirs
+- **Crafting** 🔧 - Create tools and equipment
+- **Enchanting** ✨ - Imbue items with magic
+
+### World Zones
+
+Progress through increasingly challenging areas:
+
+**Starter Zones** (Level 1)
+- Starter Town, Forest Edge, Copper Mine, Town Pond
+
+**Early Game** (Level 5-15)
+- Deep Forest, Iron Mine, Goblin Camp, Flowing River
+
+**Mid Game** (Level 20-35)
+- Ancient Grove, Crystal Caverns, Mystic Lake, Dark Dungeon
+
+**End Game** (Level 50+)
+- Dragon Lair - Home of the legendary Ancient Dragon!
+
+### Combat
+
+Combat is automatic - your character attacks based on their stats:
+- **Damage** scales with STR (warriors), WIS (mages), or AGI (archers)
+- **Attack Speed** improves with AGI
+- **Critical Hits** chance increases with LUK
+- **Defense** reduces incoming damage based on STR
+
+### Equipment
+
+Equip items to boost your stats:
+- **Weapon** - Main source of damage
+- **Armor** - Body protection
+- **Helmet** - Head protection
+- **Gloves, Boots** - Additional stats
+- **Ring, Amulet** - Accessory bonuses
+
+Item rarities: Common (gray) → Uncommon (green) → Rare (blue) → Epic (purple) → Legendary (orange)
+
+### Quests
+
+Complete quests for XP, gold, and item rewards:
+- **Tutorial Quests** - Learn the basics and get starter gear
+- **Combat Quests** - Defeat specific monsters
+- **Gathering Quests** - Collect resources
+- **Boss Bounties** - Take down powerful enemies
+
+### Talents
+
+Spend talent points (earned on level up) to permanently boost your character:
+- **Combat Tree** - Damage, crit chance, attack speed, HP
+- **Gathering Tree** - Mining/woodcutting/fishing speed, double resources
+- **Misc Tree** - XP boost, gold bonus, drop rates
 
 ## Features
 
-- **10 Building Types** - From basic miners to universe factories
-- **15+ Upgrades** - Click power, production multipliers, and synergies
-- **25+ Achievements** - Milestones with gem rewards
+- **Multiple Characters** - Create up to 6 characters per account
+- **8 Skill Trees** - Each skill levels independently
+- **15 World Zones** - From starter areas to endgame content
+- **30+ Monster Types** - Each with unique drops
+- **50+ Items** - Equipment, resources, consumables
+- **Quest System** - Objectives with meaningful rewards
+- **Talent Trees** - Permanent character upgrades
 - **Auto-Save** - Progress saves every 30 seconds
-- **Offline Progress** - Earn crystals while away (50% rate, up to 8 hours)
-- **Visual Effects** - Particles, animations, and satisfying feedback
 
 ## Project Structure
 
@@ -94,15 +140,16 @@ Install the "Live Server" extension, then right-click `index.html` and select "O
 Idle-game-ideas/
 ├── index.html          # Main HTML file
 ├── css/
-│   └── styles.css      # Game styling and animations
+│   └── styles.css      # RPG-themed styling
 └── js/
-    ├── main.js         # Game initialization and loop
-    ├── state.js        # Central state management
-    ├── resources.js    # Resource calculations
-    ├── buildings.js    # Building definitions
-    ├── upgrades.js     # Upgrade system
-    ├── achievements.js # Achievement tracking
-    ├── particles.js    # Visual effects
+    ├── main.js         # Game loop and activity processing
+    ├── character.js    # Character creation and stats
+    ├── skills.js       # Skill leveling system
+    ├── inventory.js    # Items and equipment
+    ├── world.js        # Zones and monsters
+    ├── combat.js       # Battle mechanics
+    ├── quests.js       # Quest objectives and rewards
+    ├── talents.js      # Talent tree system
     ├── ui.js           # UI rendering
     └── save.js         # Save/load functionality
 ```
@@ -117,11 +164,11 @@ Works in all modern browsers:
 
 ## Save Data
 
-Your progress is saved to your browser's localStorage. To manage saves:
+Your progress is saved to your browser's localStorage.
 
-- **Manual Save**: Click the 💾 Save button
-- **Reset Progress**: Click the 🔄 Reset button
-- **Export/Import**: Available via browser console:
+- **Auto-Save**: Every 30 seconds
+- **Manual Save**: Click the 💾 button
+- **Export/Import**: Via browser console:
   ```javascript
   // Export your save
   console.log(SaveSystem.exportSave());
@@ -130,21 +177,28 @@ Your progress is saved to your browser's localStorage. To manage saves:
   SaveSystem.importSave('your-save-string-here');
   ```
 
+## Tips for New Players
+
+1. **Start with gathering** - Mining and woodcutting are safe ways to get resources
+2. **Accept tutorial quests** - They give you starter equipment
+3. **Check your level** - Don't fight monsters too far above your level
+4. **Upgrade equipment** - Better gear makes a huge difference
+5. **Use consumables** - Health potions can save you in tough fights
+6. **Invest in talents** - Permanent bonuses help long-term
+
 ## Troubleshooting
 
 **Game won't load?**
 - Try using a local server instead of opening the file directly
 - Check browser console (F12) for errors
-- Make sure JavaScript is enabled
 
-**Save not working?**
-- Ensure localStorage is enabled in your browser
-- Check if you're in private/incognito mode (localStorage may be disabled)
+**Character not gaining XP?**
+- Make sure you're actively doing an activity (mining, combat, etc.)
+- Check the activity log for updates
 
-**Performance issues?**
-- Close other browser tabs
-- Disable browser extensions temporarily
-- Try a different browser
+**Can't equip an item?**
+- Check the level requirement on the item
+- Make sure you have the item in your inventory
 
 ## License
 
