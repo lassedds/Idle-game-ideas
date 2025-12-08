@@ -4,33 +4,45 @@
  */
 
 const SaveSystem = (function() {
-    const SAVE_KEY = 'crystal_clicker_save';
-    const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
+    const SAVE_KEY = 'crystal_clicker_save_v2';
+    const AUTO_SAVE_INTERVAL = 30000;
 
     let autoSaveTimer = null;
 
     /**
+     * Gather all game state for saving
+     */
+    function gatherFullState() {
+        const fullState = {
+            gameState: GameState.getState(),
+            expeditions: typeof Expeditions !== 'undefined' ? Expeditions.getState() : null,
+            artifacts: typeof Artifacts !== 'undefined' ? Artifacts.getState() : null,
+            events: typeof Events !== 'undefined' ? Events.getState() : null,
+            prestige: typeof Prestige !== 'undefined' ? Prestige.getState() : null,
+            savedAt: Date.now()
+        };
+        return fullState;
+    }
+
+    /**
      * Save the game to localStorage
-     * @returns {boolean} - Whether save was successful
      */
     function save() {
         try {
-            const state = GameState.getState();
-            const saveData = JSON.stringify(state);
+            const fullState = gatherFullState();
+            const saveData = JSON.stringify(fullState);
             localStorage.setItem(SAVE_KEY, saveData);
-
             UI.showNotification('💾 Game saved!');
             return true;
         } catch (e) {
             console.error('Failed to save game:', e);
-            UI.showNotification('❌ Failed to save game!');
+            UI.showNotification('❌ Failed to save!');
             return false;
         }
     }
 
     /**
      * Load the game from localStorage
-     * @returns {boolean} - Whether load was successful
      */
     function load() {
         try {
@@ -40,14 +52,40 @@ const SaveSystem = (function() {
                 return false;
             }
 
-            const state = JSON.parse(saveData);
-            GameState.loadState(state);
+            const fullState = JSON.parse(saveData);
+
+            // Load game state
+            if (fullState.gameState) {
+                GameState.loadState(fullState.gameState);
+            }
+
+            // Load expeditions
+            if (fullState.expeditions && typeof Expeditions !== 'undefined') {
+                Expeditions.loadState(fullState.expeditions);
+            }
+
+            // Load artifacts
+            if (fullState.artifacts && typeof Artifacts !== 'undefined') {
+                Artifacts.loadState(fullState.artifacts);
+            }
+
+            // Load events
+            if (fullState.events && typeof Events !== 'undefined') {
+                Events.loadState(fullState.events);
+            }
+
+            // Load prestige
+            if (fullState.prestige && typeof Prestige !== 'undefined') {
+                Prestige.loadState(fullState.prestige);
+            }
 
             // Reapply upgrade effects
             Upgrades.reapplyUpgrades();
 
             // Calculate offline progress
-            calculateOfflineProgress(state);
+            if (fullState.savedAt) {
+                calculateOfflineProgress(fullState);
+            }
 
             return true;
         } catch (e) {
@@ -58,20 +96,17 @@ const SaveSystem = (function() {
 
     /**
      * Calculate and apply offline progress
-     * @param {Object} state - Loaded state
      */
-    function calculateOfflineProgress(state) {
+    function calculateOfflineProgress(fullState) {
         const now = Date.now();
-        const lastPlayed = state.stats.startTime + state.stats.totalPlayTime;
-        const offlineTime = (now - lastPlayed) / 1000; // Convert to seconds
+        const lastPlayed = fullState.savedAt;
+        const offlineTime = (now - lastPlayed) / 1000;
 
-        // Cap offline time at 8 hours
         const maxOfflineTime = 8 * 60 * 60;
         const cappedTime = Math.min(offlineTime, maxOfflineTime);
 
-        if (cappedTime > 60) { // At least 1 minute offline
+        if (cappedTime > 60) {
             const cps = Resources.calculateCPS();
-            // Offline production is 50% of normal
             const offlineProduction = cps * cappedTime * 0.5;
 
             if (offlineProduction > 0) {
@@ -79,22 +114,16 @@ const SaveSystem = (function() {
 
                 const timeString = formatOfflineTime(cappedTime);
                 UI.showNotification(
-                    `⏰ Welcome back! You were away for ${timeString}.<br>
-                     💎 Earned ${Resources.formatNumber(offlineProduction)} crystals while away!`
+                    `⏰ Welcome back! Away for ${timeString}.<br>
+                     💎 +${Resources.formatNumber(offlineProduction)} crystals!`
                 );
             }
         }
     }
 
-    /**
-     * Format offline time for display
-     * @param {number} seconds - Time in seconds
-     * @returns {string} - Formatted time string
-     */
     function formatOfflineTime(seconds) {
         const hours = Math.floor(seconds / 3600);
         const minutes = Math.floor((seconds % 3600) / 60);
-
         if (hours > 0) {
             return `${hours}h ${minutes}m`;
         }
@@ -102,21 +131,28 @@ const SaveSystem = (function() {
     }
 
     /**
-     * Reset the game (delete save)
-     * @param {boolean} confirm - Whether to confirm reset
+     * Reset the game
      */
     function reset(confirm = true) {
-        if (confirm && !window.confirm('Are you sure you want to reset? All progress will be lost!')) {
+        if (confirm && !window.confirm('Reset ALL progress including prestige?')) {
             return false;
         }
 
         localStorage.removeItem(SAVE_KEY);
         GameState.resetState();
 
-        // Re-render UI
+        if (typeof Expeditions !== 'undefined') Expeditions.reset();
+        if (typeof Artifacts !== 'undefined') Artifacts.reset();
+        if (typeof Events !== 'undefined') Events.reset();
+        if (typeof Prestige !== 'undefined') Prestige.fullReset();
+
+        // Re-render everything
         UI.renderBuildings();
         UI.renderUpgrades();
         UI.renderAchievements();
+        UI.renderExpeditions();
+        UI.renderArtifacts();
+        UI.renderPrestige();
         UI.updateResources();
         UI.updateStats();
 
@@ -133,23 +169,17 @@ const SaveSystem = (function() {
         }
 
         autoSaveTimer = setInterval(() => {
-            const state = GameState.getState();
-            if (state.settings.autoSave) {
-                // Silent save (no notification)
-                try {
-                    const saveData = JSON.stringify(GameState.getState());
-                    localStorage.setItem(SAVE_KEY, saveData);
-                    console.log('Auto-saved');
-                } catch (e) {
-                    console.error('Auto-save failed:', e);
-                }
+            try {
+                const fullState = gatherFullState();
+                const saveData = JSON.stringify(fullState);
+                localStorage.setItem(SAVE_KEY, saveData);
+                console.log('Auto-saved');
+            } catch (e) {
+                console.error('Auto-save failed:', e);
             }
         }, AUTO_SAVE_INTERVAL);
     }
 
-    /**
-     * Stop auto-save timer
-     */
     function stopAutoSave() {
         if (autoSaveTimer) {
             clearInterval(autoSaveTimer);
@@ -157,53 +187,29 @@ const SaveSystem = (function() {
         }
     }
 
-    /**
-     * Export save as string (for manual backup)
-     * @returns {string} - Base64 encoded save data
-     */
     function exportSave() {
         try {
-            const state = GameState.getState();
-            const saveData = JSON.stringify(state);
-            return btoa(saveData);
+            const fullState = gatherFullState();
+            return btoa(JSON.stringify(fullState));
         } catch (e) {
-            console.error('Failed to export save:', e);
+            console.error('Failed to export:', e);
             return null;
         }
     }
 
-    /**
-     * Import save from string
-     * @param {string} data - Base64 encoded save data
-     * @returns {boolean} - Whether import was successful
-     */
     function importSave(data) {
         try {
-            const saveData = atob(data);
-            const state = JSON.parse(saveData);
-
-            if (!state.version) {
-                throw new Error('Invalid save data');
-            }
-
-            GameState.loadState(state);
-            Upgrades.reapplyUpgrades();
-            save(); // Save imported data
-
-            UI.renderBuildings();
-            UI.renderUpgrades();
-            UI.renderAchievements();
-
-            UI.showNotification('📥 Save imported successfully!');
+            const fullState = JSON.parse(atob(data));
+            localStorage.setItem(SAVE_KEY, JSON.stringify(fullState));
+            location.reload();
             return true;
         } catch (e) {
-            console.error('Failed to import save:', e);
-            UI.showNotification('❌ Failed to import save!');
+            console.error('Failed to import:', e);
+            UI.showNotification('❌ Invalid save data!');
             return false;
         }
     }
 
-    // Public API
     return {
         save,
         load,

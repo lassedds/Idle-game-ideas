@@ -640,3 +640,527 @@ body {
     border-radius: 2px;
     transition: width 0.3s ease;
 }
+
+/* ==========================================
+   Event Banner
+   ========================================== */
+
+#event-banner {
+    grid-column: 1 / -1;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    padding: 15px 20px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    animation: event-glow 1s ease-in-out infinite alternate;
+}
+
+#event-banner.hidden {
+    display: none;
+}
+
+@keyframes event-glow {
+    from { box-shadow: 0 0 20px rgba(108, 92, 231, 0.5); }
+    to { box-shadow: 0 0 40px rgba(253, 121, 168, 0.8); }
+}
+
+#event-icon {
+    font-size: 2rem;
+    animation: bounce 0.5s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+#event-name {
+    font-weight: bold;
+    font-size: 1.2rem;
+    flex: 1;
+}
+
+#event-timer {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+#event-progress-bar {
+    width: 100px;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#event-progress-fill {
+    height: 100%;
+    background: var(--gem-color);
+    transition: width 0.1s linear;
+}
+
+/* ==========================================
+   Active Bonuses Display
+   ========================================== */
+
+#active-bonuses {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.bonus-badge {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    animation: badge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* ==========================================
+   Expeditions
+   ========================================== */
+
+.tab-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+.tab-content h4 {
+    color: var(--secondary-color);
+    margin: 15px 0 10px 0;
+    font-size: 0.95rem;
+}
+
+.expedition-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.expedition-card:hover:not(.locked):not(.active) {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.expedition-card.locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.expedition-card.active {
+    border-color: var(--warning-color);
+    background: rgba(253, 203, 110, 0.1);
+}
+
+.expedition-card.affordable {
+    border-color: var(--success-color);
+    box-shadow: 0 0 10px rgba(0, 184, 148, 0.3);
+}
+
+.expedition-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.expedition-name {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.expedition-icon {
+    font-size: 1.3rem;
+}
+
+.expedition-duration {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.expedition-description {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.expedition-rewards {
+    display: flex;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: var(--success-color);
+}
+
+.expedition-cost {
+    font-weight: bold;
+    color: var(--crystal-color);
+}
+
+.expedition-progress {
+    margin-top: 10px;
+}
+
+.expedition-progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.expedition-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+    transition: width 0.5s ease;
+}
+
+.expedition-timer {
+    text-align: center;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: var(--warning-color);
+}
+
+/* Risk level indicator */
+.risk-level {
+    display: flex;
+    gap: 2px;
+}
+
+.risk-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.risk-dot.active {
+    background: var(--accent-color);
+}
+
+/* Pending Rewards */
+#pending-rewards {
+    background: rgba(253, 203, 110, 0.1);
+    border: 2px solid var(--gem-color);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    animation: reward-pulse 1s ease-in-out infinite;
+}
+
+@keyframes reward-pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+    50% { box-shadow: 0 0 25px rgba(255, 215, 0, 0.6); }
+}
+
+.reward-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.reward-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.reward-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.reward-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.85rem;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.reward-item.crystals { color: var(--crystal-color); }
+.reward-item.gems { color: var(--gem-color); }
+.reward-item.artifact { color: #9c27b0; }
+.reward-item.bonus { color: var(--success-color); }
+
+/* ==========================================
+   Artifacts
+   ========================================== */
+
+#artifact-bonuses {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 15px;
+    font-size: 0.85rem;
+}
+
+.artifact-bonus-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.artifact-bonus-value {
+    color: var(--success-color);
+    font-weight: bold;
+}
+
+.artifact-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-left: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.artifact-card.common { border-color: #9e9e9e; }
+.artifact-card.uncommon { border-color: #4caf50; }
+.artifact-card.rare { border-color: #2196f3; }
+.artifact-card.epic { border-color: #9c27b0; }
+.artifact-card.legendary {
+    border-color: #ff9800;
+    background: linear-gradient(90deg, rgba(255, 152, 0, 0.1), transparent);
+}
+
+.artifact-icon {
+    font-size: 2rem;
+}
+
+.artifact-info {
+    flex: 1;
+}
+
+.artifact-name {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.artifact-rarity {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.artifact-rarity.common { color: #9e9e9e; }
+.artifact-rarity.uncommon { color: #4caf50; }
+.artifact-rarity.rare { color: #2196f3; }
+.artifact-rarity.epic { color: #9c27b0; }
+.artifact-rarity.legendary { color: #ff9800; }
+
+.artifact-effect {
+    font-size: 0.8rem;
+    color: var(--success-color);
+}
+
+.artifact-count {
+    background: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+
+/* ==========================================
+   Prestige
+   ========================================== */
+
+.prestige-box {
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 152, 0, 0.1));
+    border: 2px solid var(--gem-color);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.prestige-current, .prestige-potential {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 1.1rem;
+}
+
+.prestige-potential {
+    color: var(--gem-color);
+    font-weight: bold;
+}
+
+.prestige-button {
+    width: 100%;
+    padding: 15px;
+    margin: 15px 0;
+    background: linear-gradient(135deg, var(--gem-color), #ff9800);
+    border: none;
+    border-radius: 10px;
+    color: var(--background-dark);
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.prestige-button:hover:not(:disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+}
+
+.prestige-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #666;
+}
+
+.prestige-warning {
+    font-size: 0.8rem;
+    color: var(--accent-color);
+}
+
+.prestige-upgrade-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.prestige-upgrade-card:hover:not(.maxed) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.prestige-upgrade-card.affordable {
+    border-color: var(--gem-color);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.prestige-upgrade-card.maxed {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.prestige-upgrade-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.prestige-upgrade-name {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.prestige-upgrade-level {
+    background: var(--primary-color);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+
+.prestige-upgrade-description {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.prestige-upgrade-cost {
+    font-weight: bold;
+    color: var(--gem-color);
+}
+
+/* Stardust display in header */
+.stardust-icon {
+    font-size: 2rem;
+    filter: drop-shadow(0 0 10px var(--gem-color));
+}
+
+#stardust-count {
+    color: var(--gem-color);
+    text-shadow: 0 0 10px var(--gem-color);
+}
+
+/* ==========================================
+   Notification Types
+   ========================================== */
+
+.notification.event {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+}
+
+.notification.expedition {
+    background: linear-gradient(135deg, #4caf50, #8bc34a);
+    color: white;
+}
+
+.notification.artifact {
+    background: linear-gradient(135deg, #9c27b0, #e91e63);
+    color: white;
+}
+
+.notification.prestige {
+    background: linear-gradient(135deg, var(--gem-color), #ff9800);
+    color: var(--background-dark);
+}
+
+/* ==========================================
+   Empty State Messages
+   ========================================== */
+
+.empty-state {
+    text-align: center;
+    padding: 30px;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+/* ==========================================
+   Utility Classes
+   ========================================== */
+
+.hidden {
+    display: none !important;
+}
+
+.text-success { color: var(--success-color); }
+.text-warning { color: var(--warning-color); }
+.text-accent { color: var(--accent-color); }
+.text-crystal { color: var(--crystal-color); }
+.text-gem { color: var(--gem-color); }

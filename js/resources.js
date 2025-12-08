@@ -14,6 +14,10 @@ const Resources = (function() {
      */
     function formatNumber(num) {
         if (num < 1000) {
+            // Show decimals for small numbers
+            if (num < 1 && num > 0) {
+                return num.toFixed(1);
+            }
             return Math.floor(num).toString();
         }
 
@@ -25,7 +29,6 @@ const Resources = (function() {
             suffixIndex++;
         }
 
-        // Show decimal places for values like 1.5K
         if (value < 10) {
             return value.toFixed(2) + suffixes[suffixIndex];
         } else if (value < 100) {
@@ -53,22 +56,47 @@ const Resources = (function() {
     }
 
     /**
+     * Format time remaining for expeditions
+     * @param {number} seconds - Time in seconds
+     * @returns {string} - Human readable time
+     */
+    function formatTimeRemaining(seconds) {
+        if (seconds < 60) {
+            return `${Math.ceil(seconds)}s`;
+        } else if (seconds < 3600) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}m ${secs}s`;
+        } else {
+            const hours = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            return `${hours}h ${mins}m`;
+        }
+    }
+
+    /**
      * Calculate crystals per second from all sources
      * @returns {number} - Total CPS
      */
     function calculateCPS() {
         let cps = 0;
-        const multiplier = GameState.getProductionMultiplier();
 
-        // Add production from each building
+        // Add production from each building (includes all multipliers)
         Buildings.getAll().forEach(building => {
-            const count = GameState.getBuildingCount(building.id);
-            if (count > 0) {
-                cps += building.production * count;
-            }
+            cps += Buildings.getProduction(building.id);
         });
 
-        return cps * multiplier;
+        // Add expedition bonuses if any active
+        if (typeof Expeditions !== 'undefined') {
+            cps *= Expeditions.getProductionBonus();
+        }
+
+        // Add artifact bonuses if any
+        if (typeof Artifacts !== 'undefined') {
+            cps *= Artifacts.getProductionBonus();
+        }
+
+        return cps;
     }
 
     /**
@@ -82,7 +110,14 @@ const Resources = (function() {
         const cps = calculateCPS();
         const cpsBonus = cps * 0.01;
 
-        return baseClick + cpsBonus;
+        let total = baseClick + cpsBonus;
+
+        // Add artifact click bonuses
+        if (typeof Artifacts !== 'undefined') {
+            total *= Artifacts.getClickBonus();
+        }
+
+        return total;
     }
 
     /**
@@ -110,6 +145,7 @@ const Resources = (function() {
     return {
         formatNumber,
         formatTime,
+        formatTimeRemaining,
         calculateCPS,
         calculateClickValue,
         processClick,

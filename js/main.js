@@ -6,6 +6,7 @@
 const Game = (function() {
     let lastTick = Date.now();
     let lastPassiveParticle = 0;
+    let lastUIUpdate = 0;
     let isRunning = false;
 
     /**
@@ -34,6 +35,10 @@ const Game = (function() {
         UI.updateStats();
         UI.renderBuildings();
         UI.renderUpgrades();
+        UI.renderAchievements();
+        UI.renderExpeditions();
+        UI.renderArtifacts();
+        UI.renderPrestige();
 
         // Start game loop
         isRunning = true;
@@ -134,6 +139,89 @@ const Game = (function() {
     }
 
     /**
+     * Start an expedition
+     * @param {string} destinationId - Destination identifier
+     */
+    function startExpedition(destinationId) {
+        if (typeof Expeditions !== 'undefined' && Expeditions.start(destinationId)) {
+            UI.renderExpeditions();
+            UI.updateResources();
+            UI.showNotification('🚀 Expedition started!');
+        }
+    }
+
+    /**
+     * Claim an expedition reward
+     * @param {number} index - Reward index
+     */
+    function claimExpeditionReward(index) {
+        if (typeof Expeditions === 'undefined') return;
+
+        const reward = Expeditions.claimReward(index);
+        if (reward) {
+            UI.renderExpeditions();
+            UI.renderArtifacts();
+            UI.updateResources();
+            UI.updateActiveBonuses();
+
+            // Show reward notification
+            let message = `🎉 Expedition Complete!<br>💎 +${Resources.formatNumber(reward.rewards.crystals)} crystals`;
+            if (reward.rewards.gems > 0) {
+                message += `<br>💠 +${reward.rewards.gems} gems`;
+            }
+            if (reward.rewards.artifact) {
+                message += `<br>🎁 Found: ${reward.rewards.artifact.name}!`;
+            }
+            if (reward.rewards.bonus) {
+                message += `<br>✨ ${reward.rewards.bonus.type} bonus activated!`;
+            }
+            UI.showNotification(message);
+
+            checkAndShowAchievements();
+        }
+    }
+
+    /**
+     * Buy a prestige upgrade
+     * @param {string} upgradeId - Prestige upgrade identifier
+     */
+    function buyPrestigeUpgrade(upgradeId) {
+        if (typeof Prestige !== 'undefined' && Prestige.buyUpgrade(upgradeId)) {
+            UI.renderPrestige();
+            UI.showNotification('⭐ Prestige upgrade purchased!');
+        }
+    }
+
+    /**
+     * Perform prestige reset
+     */
+    function performPrestige() {
+        if (typeof Prestige === 'undefined') return;
+
+        const earned = Prestige.calculateStardustEarned();
+        if (earned <= 0) {
+            UI.showNotification('❌ Not enough crystals to prestige!');
+            return;
+        }
+
+        if (!window.confirm(`Prestige for ${earned} Stardust? This will reset your progress but keep artifacts.`)) {
+            return;
+        }
+
+        if (Prestige.performPrestige()) {
+            // Re-render everything after prestige
+            UI.renderBuildings();
+            UI.renderUpgrades();
+            UI.renderAchievements();
+            UI.renderExpeditions();
+            UI.renderPrestige();
+            UI.updateResources();
+            UI.updateStats();
+            UI.showNotification(`✨ Prestige complete! Earned ${earned} Stardust!`);
+        }
+    }
+
+    /**
      * Check achievements and show notifications
      */
     function checkAndShowAchievements() {
@@ -163,8 +251,32 @@ const Game = (function() {
         // Apply synergy bonuses
         Upgrades.applySynergyBonuses();
 
+        // Check for random events
+        if (typeof Events !== 'undefined') {
+            const newEvent = Events.checkForEvent();
+            if (newEvent) {
+                UI.updateEventBanner();
+                UI.showNotification(`${newEvent.icon} ${newEvent.name}!<br>${newEvent.description}`);
+            }
+        }
+
+        // Check for completed expeditions
+        if (typeof Expeditions !== 'undefined') {
+            if (Expeditions.checkCompletions()) {
+                UI.renderExpeditions();
+                UI.showNotification('📦 An expedition has returned!');
+            }
+        }
+
         // Update UI (throttled)
         UI.updateResources();
+
+        // Update event banner and active bonuses frequently
+        if (now - lastUIUpdate > 500) {
+            lastUIUpdate = now;
+            UI.updateEventBanner();
+            UI.updateActiveBonuses();
+        }
 
         // Update stats every second
         if (Math.floor(now / 1000) !== Math.floor((now - deltaTime * 1000) / 1000)) {
@@ -182,6 +294,16 @@ const Game = (function() {
 
             // Check achievements periodically
             checkAndShowAchievements();
+
+            // Update expeditions display (progress bars)
+            if (typeof Expeditions !== 'undefined') {
+                UI.renderExpeditions();
+            }
+
+            // Update prestige display
+            if (typeof Prestige !== 'undefined') {
+                UI.renderPrestige();
+            }
         }
 
         // Passive particles (when CPS > 0)
@@ -208,6 +330,10 @@ const Game = (function() {
         init,
         buyBuilding,
         buyUpgrade,
+        startExpedition,
+        claimExpeditionReward,
+        buyPrestigeUpgrade,
+        performPrestige,
         stop
     };
 })();
