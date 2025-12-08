@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Clicker - Idle Game</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Header with resources -->
+        <header id="header">
+            <div class="resource-display">
+                <span class="crystal-icon">💎</span>
+                <span id="crystal-count">0</span>
+                <span class="per-second">(+<span id="crystals-per-second">0</span>/s)</span>
+            </div>
+            <div class="resource-display secondary">
+                <span class="gem-icon">✨</span>
+                <span id="gem-count">0</span>
+                <span class="label">Gems</span>
+            </div>
+        </header>
+
+        <!-- Main game area -->
+        <main id="main-area">
+            <!-- Click area -->
+            <div id="click-area">
+                <div id="crystal-container">
+                    <div id="main-crystal" class="clickable">
+                        <div class="crystal-shape"></div>
+                        <div class="crystal-glow"></div>
+                    </div>
+                </div>
+                <div id="click-power">+<span id="click-value">1</span> per click</div>
+                <div id="particles-container"></div>
+            </div>
+
+            <!-- Stats panel -->
+            <div id="stats-panel">
+                <h3>📊 Statistics</h3>
+                <div class="stat-row">
+                    <span>Total Clicks:</span>
+                    <span id="total-clicks">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Total Crystals:</span>
+                    <span id="total-crystals">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Play Time:</span>
+                    <span id="play-time">0:00</span>
+                </div>
+            </div>
+        </main>
+
+        <!-- Side panels -->
+        <aside id="side-panel">
+            <!-- Tab navigation -->
+            <div id="tab-nav">
+                <button class="tab-btn active" data-tab="buildings">🏭 Buildings</button>
+                <button class="tab-btn" data-tab="upgrades">⬆️ Upgrades</button>
+                <button class="tab-btn" data-tab="achievements">🏆 Achievements</button>
+            </div>
+
+            <!-- Buildings tab -->
+            <div id="buildings-tab" class="tab-content active">
+                <div id="buildings-list"></div>
+            </div>
+
+            <!-- Upgrades tab -->
+            <div id="upgrades-tab" class="tab-content">
+                <div id="upgrades-list"></div>
+            </div>
+
+            <!-- Achievements tab -->
+            <div id="achievements-tab" class="tab-content">
+                <div id="achievements-list"></div>
+            </div>
+        </aside>
+
+        <!-- Notification area -->
+        <div id="notifications"></div>
+
+        <!-- Save controls -->
+        <div id="save-controls">
+            <button id="save-btn">💾 Save</button>
+            <button id="reset-btn">🔄 Reset</button>
+            <span id="auto-save-status">Auto-save: ON</span>
+        </div>
+    </div>
+
+    <!-- Scripts (modular) -->
+    <script src="js/state.js"></script>
+    <script src="js/resources.js"></script>
+    <script src="js/buildings.js"></script>
+    <script src="js/upgrades.js"></script>
+    <script src="js/achievements.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/save.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
