@@ -7,6 +7,7 @@ const UI = (function() {
     let currentTab = 'world';
     let currentQuestFilter = 'active';
     let currentInventoryFilter = 'all';
+    let currentShopFilter = 'all';
     let currentTalentTree = 'combat';
     let selectedClass = null;
 
@@ -17,6 +18,7 @@ const UI = (function() {
         setupTabNavigation();
         setupCharacterCreation();
         setupInventoryFilters();
+        setupShopFilters();
         setupQuestFilters();
         setupTalentTabs();
         setupSaveButton();
@@ -152,20 +154,42 @@ const UI = (function() {
 
         const characters = Character.getAll();
         const activeChar = Character.getActive();
+        const bonuses = Character.getMultiCharBonuses();
 
         container.innerHTML = '';
 
+        // Show multi-char bonus indicator if more than 1 character
+        if (characters.length > 1) {
+            const bonusDiv = document.createElement('div');
+            bonusDiv.className = 'multi-char-bonus';
+            bonusDiv.innerHTML = `<span title="Multi-character bonuses active!">✨${characters.length}x</span>`;
+            bonusDiv.addEventListener('click', () => showMultiCharBonuses());
+            container.appendChild(bonusDiv);
+        }
+
         characters.forEach((char, index) => {
             const cls = Character.getClass(char.class);
+            const isActive = activeChar && activeChar.id === char.id;
+            const hasAfkActivity = !isActive && char.activity && char.activityZone;
+
             const div = document.createElement('div');
-            div.className = `char-slot ${activeChar && activeChar.id === char.id ? 'active' : ''}`;
+            div.className = `char-slot ${isActive ? 'active' : ''} ${hasAfkActivity ? 'afk-active' : ''}`;
+
+            let afkStatus = '';
+            if (hasAfkActivity) {
+                const zone = World.getZone(char.activityZone);
+                afkStatus = `<span class="afk-status">💤 ${char.activity} @ ${zone ? zone.name : 'Unknown'}</span>`;
+            }
+
             div.innerHTML = `
                 <span class="class-icon">${cls.icon}</span>
                 <div class="char-info">
                     <span class="char-name">${char.name}</span>
                     <span class="char-level">Lv. ${char.level} ${cls.name}</span>
+                    ${afkStatus}
                 </div>
             `;
+
             div.addEventListener('click', () => {
                 Character.setActive(index);
                 renderCharacterSlots();
@@ -173,8 +197,73 @@ const UI = (function() {
                 renderSkills();
                 renderTalents();
             });
+
+            // Right-click to set AFK activity (only for non-active characters)
+            if (!isActive) {
+                div.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    showAfkActivityMenu(e.pageX, e.pageY, index);
+                });
+            }
+
             container.appendChild(div);
         });
+    }
+
+    /**
+     * Show multi-character bonuses popup
+     */
+    function showMultiCharBonuses() {
+        const bonuses = Character.getMultiCharBonuses();
+        const count = Character.getAll().length;
+
+        showNotification(`
+            <strong>Multi-Character Bonuses (${count} chars):</strong><br>
+            +${Math.round((bonuses.expBonus - 1) * 100)}% EXP<br>
+            +${Math.round((bonuses.goldBonus - 1) * 100)}% Gold<br>
+            +${Math.round((bonuses.dropBonus - 1) * 100)}% Drop Rate<br>
+            +${Math.round((bonuses.skillExpBonus - 1) * 100)}% Skill EXP<br>
+            ${Math.round(bonuses.afkEfficiency * 100)}% AFK Efficiency
+        `, 'info');
+    }
+
+    /**
+     * Show AFK activity menu for a character
+     */
+    function showAfkActivityMenu(x, y, charIndex) {
+        const char = Character.getByIndex(charIndex);
+        if (!char) return;
+
+        const unlockedZones = World.getUnlockedZones();
+        const options = [
+            { label: '⏹️ Stop AFK', action: () => {
+                char.activity = null;
+                char.activityZone = null;
+                renderCharacterSlots();
+                showNotification(`${char.name} stopped AFK activity`, 'info');
+                hideContextMenu();
+            }}
+        ];
+
+        unlockedZones.forEach(zone => {
+            if (zone.activities && zone.activities.length > 0) {
+                zone.activities.forEach(activity => {
+                    if (activity.type !== 'combat' || zone.monsters.length > 0) {
+                        options.push({
+                            label: `${zone.icon} ${zone.name} - ${activity.type}`,
+                            action: () => {
+                                Character.setAfkActivity(charIndex, activity.type, zone.id);
+                                renderCharacterSlots();
+                                showNotification(`${char.name} now AFK ${activity.type} at ${zone.name}`, 'success');
+                                hideContextMenu();
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+        showContextMenu(x, y, options);
     }
 
     /**
@@ -251,21 +340,44 @@ const UI = (function() {
         const char = Character.getActive();
         if (!char) return;
 
+        const charIndex = Character.getAll().indexOf(char);
+
         document.querySelectorAll('.equip-slot').forEach(slot => {
             const slotName = slot.dataset.slot;
             const itemId = char.equipment[slotName];
 
+            // Remove old listeners
+            const newSlot = slot.cloneNode(true);
+            slot.parentNode.replaceChild(newSlot, slot);
+
             if (itemId) {
                 const item = Inventory.getItemDef(itemId);
-                slot.innerHTML = item ? item.icon : '❓';
-                slot.classList.add('equipped');
+                newSlot.innerHTML = item ? item.icon : '❓';
+                newSlot.classList.add('equipped');
+                newSlot.title = item ? `${item.name} (click to unequip)` : slotName;
+
+                // Add click to unequip
+                newSlot.addEventListener('click', () => {
+                    if (Inventory.unequipItem(slotName, charIndex)) {
+                        showNotification(`Unequipped ${item.name}!`, 'success');
+                        updateCharacterInfo();
+                        renderInventory();
+                    }
+                });
+
+                // Show item tooltip on hover
+                if (item) {
+                    newSlot.addEventListener('mouseenter', (e) => showItemTooltip(e, item));
+                    newSlot.addEventListener('mouseleave', hideTooltip);
+                }
             } else {
                 const defaultIcons = {
                     helmet: '🪖', weapon: '⚔️', armor: '🛡️',
                     gloves: '🧤', boots: '👢', ring: '💍', amulet: '📿'
                 };
-                slot.innerHTML = defaultIcons[slotName] || '◻️';
-                slot.classList.remove('equipped');
+                newSlot.innerHTML = defaultIcons[slotName] || '◻️';
+                newSlot.classList.remove('equipped');
+                newSlot.title = `${slotName} (empty)`;
             }
         });
     }
@@ -278,21 +390,44 @@ const UI = (function() {
         if (!container) return;
 
         const zones = World.getAllZones();
+        const char = Character.getActive();
         container.innerHTML = '';
 
         for (const zoneId in zones) {
             const zone = zones[zoneId];
-            const unlocked = World.isZoneUnlocked(zoneId);
+            const reqs = World.getZoneRequirements(zoneId);
+            const unlocked = reqs.unlocked && reqs.meetsLevel && reqs.meetsSkill;
+
+            // Determine lock reason
+            let lockReason = '';
+            if (!reqs.unlocked) {
+                lockReason = '🔒 Locked';
+            } else if (!reqs.meetsLevel) {
+                lockReason = `🔒 Lv. ${zone.reqLevel}`;
+            } else if (!reqs.meetsSkill && reqs.skillReq) {
+                const skillDef = Skills.getSkillDef(reqs.skillReq.skillId);
+                lockReason = `🔒 ${skillDef ? skillDef.name : reqs.skillReq.skillId} Lv.${reqs.skillReq.level}`;
+            }
 
             const div = document.createElement('div');
             div.className = `zone-card ${unlocked ? '' : 'locked'}`;
+
+            let reqsHtml = `<div class="zone-level">Lv. ${zone.reqLevel}`;
+            if (zone.reqSkill) {
+                const skillDef = Skills.getSkillDef(zone.reqSkill.skillId);
+                const skillName = skillDef ? skillDef.name : zone.reqSkill.skillId;
+                reqsHtml += ` | ${skillDef ? skillDef.icon : ''} ${zone.reqSkill.level}`;
+            }
+            reqsHtml += '</div>';
+
             div.innerHTML = `
                 <span class="zone-icon">${zone.icon}</span>
                 <div class="zone-name">${zone.name}</div>
-                <div class="zone-level">Req. Lv. ${zone.reqLevel}</div>
+                ${reqsHtml}
                 <div class="zone-activities">
                     ${zone.activities.map(a => getActivityIcon(a.type)).join('')}
                 </div>
+                ${!unlocked ? `<div class="zone-lock-reason">${lockReason}</div>` : ''}
             `;
 
             if (unlocked) {
@@ -425,12 +560,13 @@ const UI = (function() {
             div.addEventListener('mouseenter', (e) => showItemTooltip(e, def));
             div.addEventListener('mouseleave', hideTooltip);
             div.addEventListener('click', () => handleItemClick(itemId));
+            div.addEventListener('contextmenu', (e) => handleItemRightClick(e, itemId));
             container.appendChild(div);
         }
     }
 
     /**
-     * Handle item click
+     * Handle item click (left click)
      */
     function handleItemClick(itemId) {
         const def = Inventory.getItemDef(itemId);
@@ -453,6 +589,85 @@ const UI = (function() {
                 renderInventory();
             }
         }
+    }
+
+    /**
+     * Handle item right-click (sell)
+     */
+    function handleItemRightClick(e, itemId) {
+        e.preventDefault();
+        const def = Inventory.getItemDef(itemId);
+        if (!def) return;
+
+        showContextMenu(e.pageX, e.pageY, [
+            {
+                label: `Sell 1 for ${Math.floor(def.value * 0.5)}g`,
+                action: () => sellItems(itemId, 1)
+            },
+            {
+                label: `Sell 10 for ${Math.floor(def.value * 0.5 * 10)}g`,
+                action: () => sellItems(itemId, 10)
+            },
+            {
+                label: `Sell All for ${Math.floor(def.value * 0.5 * Inventory.getQuantity(itemId))}g`,
+                action: () => sellItems(itemId, Inventory.getQuantity(itemId))
+            }
+        ]);
+    }
+
+    /**
+     * Sell items
+     */
+    function sellItems(itemId, quantity) {
+        const def = Inventory.getItemDef(itemId);
+        if (!def) return;
+
+        const available = Inventory.getQuantity(itemId);
+        const toSell = Math.min(quantity, available);
+
+        if (toSell > 0 && Inventory.sellItem(itemId, toSell)) {
+            const gold = Math.floor(def.value * 0.5) * toSell;
+            showNotification(`Sold ${toSell}x ${def.name} for ${gold}g!`, 'success');
+            renderInventory();
+            updateGold();
+        }
+        hideContextMenu();
+    }
+
+    /**
+     * Show context menu
+     */
+    function showContextMenu(x, y, options) {
+        hideContextMenu();
+
+        const menu = document.createElement('div');
+        menu.id = 'context-menu';
+        menu.className = 'context-menu';
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+
+        options.forEach(opt => {
+            const item = document.createElement('div');
+            item.className = 'context-item';
+            item.textContent = opt.label;
+            item.addEventListener('click', opt.action);
+            menu.appendChild(item);
+        });
+
+        document.body.appendChild(menu);
+
+        // Close on click outside
+        setTimeout(() => {
+            document.addEventListener('click', hideContextMenu, { once: true });
+        }, 10);
+    }
+
+    /**
+     * Hide context menu
+     */
+    function hideContextMenu() {
+        const menu = document.getElementById('context-menu');
+        if (menu) menu.remove();
     }
 
     /**
@@ -493,6 +708,118 @@ const UI = (function() {
     }
 
     /**
+     * Setup shop filters
+     */
+    function setupShopFilters() {
+        document.querySelectorAll('.shop-filters .filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentShopFilter = btn.dataset.filter;
+                document.querySelectorAll('.shop-filters .filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderShop();
+            });
+        });
+    }
+
+    /**
+     * Render shop
+     */
+    function renderShop() {
+        const container = document.getElementById('shop-grid');
+        if (!container) return;
+
+        const allDefs = Inventory.getAllItemDefs();
+        const char = Character.getActive();
+        const charLevel = char ? char.level : 1;
+        const gold = Inventory.getGold();
+
+        container.innerHTML = '';
+
+        // Shop items (equipment, consumables, tools)
+        const shopItems = Object.values(allDefs).filter(item => {
+            if (item.type === 'resource') return false; // Don't sell raw resources
+
+            // Filter by category
+            if (currentShopFilter !== 'all') {
+                if (currentShopFilter === 'weapon' && item.slot !== 'weapon') return false;
+                if (currentShopFilter === 'armor' && !['armor', 'helmet', 'gloves', 'boots'].includes(item.slot)) return false;
+                if (currentShopFilter === 'consumable' && item.type !== 'consumable') return false;
+                if (currentShopFilter === 'tool' && item.type !== 'tool') return false;
+            }
+
+            return true;
+        });
+
+        // Sort by level requirement, then by value
+        shopItems.sort((a, b) => {
+            const levelA = a.reqLevel || 0;
+            const levelB = b.reqLevel || 0;
+            if (levelA !== levelB) return levelA - levelB;
+            return a.value - b.value;
+        });
+
+        shopItems.forEach(item => {
+            const canAfford = gold >= item.value;
+            const meetsLevel = !item.reqLevel || charLevel >= item.reqLevel;
+
+            const div = document.createElement('div');
+            div.className = `shop-item rarity-${item.rarity} ${!canAfford || !meetsLevel ? 'disabled' : ''}`;
+            div.innerHTML = `
+                <div class="shop-item-icon">${item.icon}</div>
+                <div class="shop-item-info">
+                    <div class="shop-item-name" style="color: ${Inventory.getRarityColor(item.rarity)}">${item.name}</div>
+                    <div class="shop-item-type">${item.type}${item.reqLevel ? ` • Lv.${item.reqLevel}` : ''}</div>
+                    ${item.stats ? `<div class="shop-item-stats">${Object.entries(item.stats).map(([k,v]) => `+${v} ${k.toUpperCase()}`).join(', ')}</div>` : ''}
+                </div>
+                <div class="shop-item-price ${!canAfford ? 'too-expensive' : ''}">
+                    💰 ${item.value}
+                </div>
+            `;
+
+            if (canAfford && meetsLevel) {
+                div.addEventListener('click', () => buyItem(item.id));
+            }
+
+            div.addEventListener('mouseenter', (e) => showItemTooltip(e, item));
+            div.addEventListener('mouseleave', hideTooltip);
+
+            container.appendChild(div);
+        });
+
+        if (shopItems.length === 0) {
+            container.innerHTML = '<p class="hint">No items available in this category.</p>';
+        }
+    }
+
+    /**
+     * Buy item from shop
+     */
+    function buyItem(itemId) {
+        const item = Inventory.getItemDef(itemId);
+        if (!item) return;
+
+        const gold = Inventory.getGold();
+        if (gold < item.value) {
+            showNotification('Not enough gold!', 'error');
+            return;
+        }
+
+        const char = Character.getActive();
+        if (item.reqLevel && char && char.level < item.reqLevel) {
+            showNotification(`Requires level ${item.reqLevel}!`, 'error');
+            return;
+        }
+
+        if (Inventory.removeGold(item.value)) {
+            Inventory.addItem(itemId, 1);
+            showNotification(`Bought ${item.name}!`, 'success');
+            renderShop();
+            renderInventory();
+            updateGold();
+        }
+    }
+
+    /**
      * Setup quest filters
      */
     function setupQuestFilters() {
@@ -514,11 +841,19 @@ const UI = (function() {
         if (!container) return;
 
         let quests = Quests.getAllQuests();
+        const char = Character.getActive();
+        const charLevel = char ? char.level : 1;
 
         if (currentQuestFilter === 'active') {
-            quests = quests.filter(q => q.status === 'active');
+            // Show in-progress quests AND ready-to-complete quests
+            quests = quests.filter(q => q.status === 'active' || q.status === 'complete');
         } else if (currentQuestFilter === 'available') {
-            quests = quests.filter(q => q.status === 'available' && !q.completed);
+            // Show available quests that meet level requirements
+            quests = quests.filter(q => {
+                if (q.status !== 'available' || q.completed) return false;
+                if (q.reqLevel && charLevel < q.reqLevel) return false;
+                return true;
+            });
         } else if (currentQuestFilter === 'completed') {
             quests = quests.filter(q => q.completed);
         }
@@ -526,26 +861,43 @@ const UI = (function() {
         container.innerHTML = '';
 
         if (quests.length === 0) {
-            container.innerHTML = '<p class="hint">No quests found.</p>';
+            let hint = 'No quests found.';
+            if (currentQuestFilter === 'active') {
+                hint = 'No active quests. Check the Available tab to accept a quest!';
+            } else if (currentQuestFilter === 'available') {
+                hint = 'No available quests. Complete current quests to unlock more!';
+            }
+            container.innerHTML = `<p class="hint">${hint}</p>`;
             return;
         }
 
         quests.forEach(quest => {
             const div = document.createElement('div');
-            div.className = `quest-card ${quest.status === 'complete' ? 'complete' : ''}`;
+            const isReady = quest.status === 'complete';
+            div.className = `quest-card ${isReady ? 'complete' : ''}`;
 
             let objectivesHtml = quest.objectives.map(obj => {
                 const complete = obj.current >= obj.amount;
                 return `<div class="quest-objective ${complete ? 'complete' : ''}">
-                    ${complete ? '✓' : '○'} ${getObjectiveText(obj)} (${obj.current}/${obj.amount})
+                    ${complete ? '✓' : '○'} ${getObjectiveText(obj)} (${Math.min(obj.current, obj.amount)}/${obj.amount})
                 </div>`;
             }).join('');
 
             let buttonHtml = '';
+            let statusHtml = '';
             if (quest.status === 'available' && !quest.completed) {
-                buttonHtml = `<button class="quest-btn accept" onclick="Game.acceptQuest('${quest.id}')">Accept Quest</button>`;
+                const meetsLevel = !quest.reqLevel || charLevel >= quest.reqLevel;
+                if (meetsLevel) {
+                    buttonHtml = `<button class="quest-btn accept" onclick="Game.acceptQuest('${quest.id}')">Accept Quest</button>`;
+                } else {
+                    statusHtml = `<div class="quest-requirement">🔒 Requires Level ${quest.reqLevel}</div>`;
+                }
             } else if (quest.status === 'complete') {
-                buttonHtml = `<button class="quest-btn complete" onclick="Game.completeQuest('${quest.id}')">Complete Quest</button>`;
+                buttonHtml = `<button class="quest-btn complete" onclick="Game.completeQuest('${quest.id}')">🎉 Claim Reward!</button>`;
+            } else if (quest.status === 'active') {
+                statusHtml = `<div class="quest-status">📋 In Progress</div>`;
+            } else if (quest.completed) {
+                statusHtml = `<div class="quest-status completed">✅ Completed</div>`;
             }
 
             div.innerHTML = `
@@ -555,9 +907,11 @@ const UI = (function() {
                 </div>
                 <div class="quest-description">${quest.description}</div>
                 <div class="quest-objectives">${objectivesHtml}</div>
+                ${statusHtml}
                 <div class="quest-rewards">
                     ${quest.rewards.exp ? `📈 ${quest.rewards.exp} XP` : ''}
                     ${quest.rewards.gold ? `💰 ${quest.rewards.gold}` : ''}
+                    ${quest.rewards.items ? `🎁 ${quest.rewards.items.length} items` : ''}
                 </div>
                 ${buttonHtml}
             `;
@@ -825,6 +1179,7 @@ const UI = (function() {
         updateCharacterInfo,
         renderZones,
         renderInventory,
+        renderShop,
         renderQuests,
         renderSkills,
         renderTalents,

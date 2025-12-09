@@ -77,6 +77,7 @@
                     <button class="main-tab active" data-tab="world">🗺️ World</button>
                     <button class="main-tab" data-tab="skills">⛏️ Skills</button>
                     <button class="main-tab" data-tab="inventory">🎒 Inventory</button>
+                    <button class="main-tab" data-tab="shop">🏪 Shop</button>
                     <button class="main-tab" data-tab="quests">📜 Quests</button>
                     <button class="main-tab" data-tab="talents">✨ Talents</button>
                 </div>
@@ -113,7 +114,23 @@
                             <button class="filter-btn" data-filter="consumable">Consumables</button>
                         </div>
                     </div>
+                    <p class="hint" style="margin-bottom: 10px;">💡 Right-click items to sell them!</p>
                     <div id="inventory-grid"></div>
+                </div>
+
+                <!-- Shop tab -->
+                <div id="shop-tab" class="main-content">
+                    <div class="shop-header">
+                        <h3>🏪 Shop</h3>
+                        <div class="shop-filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="weapon">Weapons</button>
+                            <button class="filter-btn" data-filter="armor">Armor</button>
+                            <button class="filter-btn" data-filter="consumable">Consumables</button>
+                            <button class="filter-btn" data-filter="tool">Tools</button>
+                        </div>
+                    </div>
+                    <div id="shop-grid"></div>
                 </div>
 
                 <!-- Quests tab -->

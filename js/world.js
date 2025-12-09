@@ -40,10 +40,11 @@ const World = (function() {
             id: 'deep_forest',
             name: 'Deep Forest',
             icon: '🌳',
-            description: 'Dense woodland with stronger creatures',
+            description: 'Dense woodland. Requires Woodcutting Lv.8',
             background: '#1a5c1a',
             unlocked: false,
             reqLevel: 5,
+            reqSkill: { skillId: 'woodcutting', level: 8 },
             activities: [
                 { type: 'woodcutting', resource: 'maple_log', expPerAction: 25, timePerAction: 4 },
                 { type: 'combat', monsters: ['wolf', 'goblin'] }
@@ -55,10 +56,11 @@ const World = (function() {
             id: 'ancient_grove',
             name: 'Ancient Grove',
             icon: '🌿',
-            description: 'Mystical forest with ancient trees',
+            description: 'Mystical forest. Requires Woodcutting Lv.25',
             background: '#0d3d0d',
             unlocked: false,
             reqLevel: 20,
+            reqSkill: { skillId: 'woodcutting', level: 25 },
             activities: [
                 { type: 'woodcutting', resource: 'ancient_log', expPerAction: 100, timePerAction: 8 },
                 { type: 'combat', monsters: ['forest_guardian', 'treant'] }
@@ -86,10 +88,11 @@ const World = (function() {
             id: 'iron_mine',
             name: 'Iron Mine',
             icon: '🔩',
-            description: 'Deeper mine with iron ore',
+            description: 'Deeper mine with iron ore. Requires Mining Lv.10',
             background: '#5c4033',
             unlocked: false,
             reqLevel: 8,
+            reqSkill: { skillId: 'mining', level: 10 },
             activities: [
                 { type: 'mining', resource: 'iron_ore', expPerAction: 30, timePerAction: 4 },
                 { type: 'mining', resource: 'gold_ore', expPerAction: 50, timePerAction: 6, chance: 0.2 },
@@ -102,10 +105,11 @@ const World = (function() {
             id: 'crystal_caverns',
             name: 'Crystal Caverns',
             icon: '💎',
-            description: 'Sparkling caves filled with precious crystals',
+            description: 'Sparkling caves filled with crystals. Requires Mining Lv.30',
             background: '#4a148c',
             unlocked: false,
             reqLevel: 25,
+            reqSkill: { skillId: 'mining', level: 30 },
             activities: [
                 { type: 'mining', resource: 'crystal_shard', expPerAction: 80, timePerAction: 5 },
                 { type: 'mining', resource: 'diamond', expPerAction: 200, timePerAction: 10, chance: 0.1 },
@@ -133,10 +137,11 @@ const World = (function() {
             id: 'river',
             name: 'Flowing River',
             icon: '🏞️',
-            description: 'A wide river with diverse fish',
+            description: 'A wide river with diverse fish. Requires Fishing Lv.12',
             background: '#0288d1',
             unlocked: false,
             reqLevel: 10,
+            reqSkill: { skillId: 'fishing', level: 12 },
             activities: [
                 { type: 'fishing', resource: 'bass', expPerAction: 25, timePerAction: 5 },
                 { type: 'fishing', resource: 'salmon', expPerAction: 45, timePerAction: 7, chance: 0.3 }
@@ -148,10 +153,11 @@ const World = (function() {
             id: 'mystic_lake',
             name: 'Mystic Lake',
             icon: '✨🌊',
-            description: 'A magical lake with rare fish',
+            description: 'A magical lake with rare fish. Requires Fishing Lv.35',
             background: '#1565c0',
             unlocked: false,
             reqLevel: 30,
+            reqSkill: { skillId: 'fishing', level: 35 },
             activities: [
                 { type: 'fishing', resource: 'golden_fish', expPerAction: 150, timePerAction: 10 },
                 { type: 'fishing', resource: 'legendary_catch', expPerAction: 500, timePerAction: 30, chance: 0.05 }
@@ -200,6 +206,137 @@ const World = (function() {
                 { type: 'combat', monsters: ['dragon_wyrmling', 'dragon'] }
             ],
             monsters: ['dragon_wyrmling', 'dragon']
+        },
+
+        // Crafting Hub
+        crafting_hall: {
+            id: 'crafting_hall',
+            name: 'Crafting Hall',
+            icon: '🔨',
+            description: 'Central hub for all crafting activities',
+            background: '#5d4037',
+            unlocked: true,
+            reqLevel: 1,
+            activities: [
+                { type: 'smithing', resource: 'bronze_bar', expPerAction: 15, timePerAction: 5 },
+                { type: 'crafting', resource: 'basic_tool', expPerAction: 12, timePerAction: 4 },
+                { type: 'alchemy', resource: 'health_potion', expPerAction: 10, timePerAction: 3 }
+            ],
+            monsters: []
+        },
+
+        // Desert areas
+        scorching_sands: {
+            id: 'scorching_sands',
+            name: 'Scorching Sands',
+            icon: '🏜️',
+            description: 'Hot desert with unique monsters',
+            background: '#ff8f00',
+            unlocked: false,
+            reqLevel: 15,
+            activities: [
+                { type: 'mining', resource: 'sandite', expPerAction: 40, timePerAction: 4 },
+                { type: 'combat', monsters: ['sand_worm', 'desert_scorpion', 'mummy'] }
+            ],
+            monsters: ['sand_worm', 'desert_scorpion', 'mummy']
+        },
+
+        ancient_pyramid: {
+            id: 'ancient_pyramid',
+            name: 'Ancient Pyramid',
+            icon: '🔺',
+            description: 'Ancient ruins with treasure. Requires Combat Lv.20',
+            background: '#6d4c41',
+            unlocked: false,
+            reqLevel: 25,
+            reqSkill: { skillId: 'combat', level: 20 },
+            activities: [
+                { type: 'combat', monsters: ['mummy', 'pharaoh_guardian', 'sand_golem'] }
+            ],
+            monsters: ['mummy', 'pharaoh_guardian', 'sand_golem']
+        },
+
+        // Volcanic areas
+        volcanic_ridge: {
+            id: 'volcanic_ridge',
+            name: 'Volcanic Ridge',
+            icon: '🌋',
+            description: 'Volcanic area with rare ores. Requires Mining Lv.20',
+            background: '#d84315',
+            unlocked: false,
+            reqLevel: 20,
+            reqSkill: { skillId: 'mining', level: 20 },
+            activities: [
+                { type: 'mining', resource: 'obsidite', expPerAction: 60, timePerAction: 5 },
+                { type: 'mining', resource: 'fire_crystal', expPerAction: 120, timePerAction: 8, chance: 0.2 },
+                { type: 'combat', monsters: ['fire_elemental', 'lava_golem'] }
+            ],
+            monsters: ['fire_elemental', 'lava_golem']
+        },
+
+        magma_core: {
+            id: 'magma_core',
+            name: 'Magma Core',
+            icon: '🔥',
+            description: 'Heart of the volcano. End-game mining',
+            background: '#bf360c',
+            unlocked: false,
+            reqLevel: 45,
+            reqSkill: { skillId: 'mining', level: 50 },
+            activities: [
+                { type: 'mining', resource: 'hellstone', expPerAction: 200, timePerAction: 10 },
+                { type: 'combat', monsters: ['magma_wyrm', 'volcanic_titan'] }
+            ],
+            monsters: ['magma_wyrm', 'volcanic_titan']
+        },
+
+        // Ice areas
+        frozen_tundra: {
+            id: 'frozen_tundra',
+            name: 'Frozen Tundra',
+            icon: '❄️',
+            description: 'Icy wasteland with unique creatures',
+            background: '#4fc3f7',
+            unlocked: false,
+            reqLevel: 18,
+            activities: [
+                { type: 'woodcutting', resource: 'frostwood', expPerAction: 35, timePerAction: 5 },
+                { type: 'combat', monsters: ['frost_wolf', 'ice_elemental'] }
+            ],
+            monsters: ['frost_wolf', 'ice_elemental']
+        },
+
+        glacier_peak: {
+            id: 'glacier_peak',
+            name: 'Glacier Peak',
+            icon: '🏔️',
+            description: 'Highest mountain with rare fishing',
+            background: '#e3f2fd',
+            unlocked: false,
+            reqLevel: 35,
+            reqSkill: { skillId: 'fishing', level: 25 },
+            activities: [
+                { type: 'fishing', resource: 'ice_fish', expPerAction: 80, timePerAction: 6 },
+                { type: 'combat', monsters: ['yeti', 'ice_dragon'] }
+            ],
+            monsters: ['yeti', 'ice_dragon']
+        },
+
+        // Swamp areas
+        murky_swamp: {
+            id: 'murky_swamp',
+            name: 'Murky Swamp',
+            icon: '🌿',
+            description: 'Dangerous swamp with alchemy ingredients',
+            background: '#33691e',
+            unlocked: false,
+            reqLevel: 12,
+            activities: [
+                { type: 'fishing', resource: 'swamp_eel', expPerAction: 20, timePerAction: 4 },
+                { type: 'alchemy', resource: 'poison_extract', expPerAction: 30, timePerAction: 5 },
+                { type: 'combat', monsters: ['swamp_troll', 'giant_frog', 'bog_witch'] }
+            ],
+            monsters: ['swamp_troll', 'giant_frog', 'bog_witch']
         }
     };
 
@@ -542,11 +679,251 @@ const World = (function() {
             ],
             attackSpeed: 2.5,
             isBoss: true
+        },
+
+        // Desert monsters
+        sand_worm: {
+            id: 'sand_worm',
+            name: 'Sand Worm',
+            icon: '🪱',
+            level: 16,
+            hp: 120,
+            damage: 25,
+            defense: 12,
+            exp: 130,
+            gold: 55,
+            drops: [],
+            attackSpeed: 2
+        },
+        desert_scorpion: {
+            id: 'desert_scorpion',
+            name: 'Desert Scorpion',
+            icon: '🦂',
+            level: 18,
+            hp: 100,
+            damage: 35,
+            defense: 18,
+            exp: 160,
+            gold: 70,
+            drops: [],
+            attackSpeed: 1.5
+        },
+        mummy: {
+            id: 'mummy',
+            name: 'Mummy',
+            icon: '🧟',
+            level: 22,
+            hp: 200,
+            damage: 30,
+            defense: 25,
+            exp: 220,
+            gold: 100,
+            drops: [
+                { itemId: 'ancient_wrap', chance: 0.3 }
+            ],
+            attackSpeed: 2.5
+        },
+        pharaoh_guardian: {
+            id: 'pharaoh_guardian',
+            name: 'Pharaoh Guardian',
+            icon: '👳',
+            level: 28,
+            hp: 350,
+            damage: 55,
+            defense: 35,
+            exp: 400,
+            gold: 180,
+            drops: [
+                { itemId: 'gold_amulet', chance: 0.15 }
+            ],
+            attackSpeed: 2
+        },
+        sand_golem: {
+            id: 'sand_golem',
+            name: 'Sand Golem',
+            icon: '🗿',
+            level: 32,
+            hp: 500,
+            damage: 45,
+            defense: 50,
+            exp: 550,
+            gold: 220,
+            drops: [],
+            attackSpeed: 3,
+            isBoss: true
+        },
+
+        // Volcanic monsters
+        fire_elemental: {
+            id: 'fire_elemental',
+            name: 'Fire Elemental',
+            icon: '🔥',
+            level: 24,
+            hp: 180,
+            damage: 45,
+            defense: 15,
+            exp: 280,
+            gold: 120,
+            drops: [
+                { itemId: 'fire_crystal', chance: 0.2 }
+            ],
+            attackSpeed: 1.5
+        },
+        lava_golem: {
+            id: 'lava_golem',
+            name: 'Lava Golem',
+            icon: '🌋',
+            level: 28,
+            hp: 400,
+            damage: 55,
+            defense: 40,
+            exp: 380,
+            gold: 160,
+            drops: [],
+            attackSpeed: 2.5
+        },
+        magma_wyrm: {
+            id: 'magma_wyrm',
+            name: 'Magma Wyrm',
+            icon: '🐲',
+            level: 48,
+            hp: 700,
+            damage: 90,
+            defense: 55,
+            exp: 1000,
+            gold: 400,
+            drops: [
+                { itemId: 'hellstone', chance: 0.25 }
+            ],
+            attackSpeed: 1.8
+        },
+        volcanic_titan: {
+            id: 'volcanic_titan',
+            name: 'Volcanic Titan',
+            icon: '👹',
+            level: 55,
+            hp: 2000,
+            damage: 120,
+            defense: 80,
+            exp: 3000,
+            gold: 1000,
+            drops: [
+                { itemId: 'titan_heart', chance: 0.3 },
+                { itemId: 'boss_essence', chance: 0.4 }
+            ],
+            attackSpeed: 3,
+            isBoss: true
+        },
+
+        // Ice monsters
+        frost_wolf: {
+            id: 'frost_wolf',
+            name: 'Frost Wolf',
+            icon: '🐺',
+            level: 20,
+            hp: 140,
+            damage: 30,
+            defense: 15,
+            exp: 180,
+            gold: 75,
+            drops: [
+                { itemId: 'frost_fang', chance: 0.25 }
+            ],
+            attackSpeed: 1.5
+        },
+        ice_elemental: {
+            id: 'ice_elemental',
+            name: 'Ice Elemental',
+            icon: '❄️',
+            level: 22,
+            hp: 160,
+            damage: 40,
+            defense: 20,
+            exp: 220,
+            gold: 90,
+            drops: [],
+            attackSpeed: 1.8
+        },
+        yeti: {
+            id: 'yeti',
+            name: 'Yeti',
+            icon: '🦍',
+            level: 38,
+            hp: 600,
+            damage: 70,
+            defense: 45,
+            exp: 700,
+            gold: 280,
+            drops: [
+                { itemId: 'yeti_fur', chance: 0.4 }
+            ],
+            attackSpeed: 2.2,
+            isBoss: true
+        },
+        ice_dragon: {
+            id: 'ice_dragon',
+            name: 'Ice Dragon',
+            icon: '🐉',
+            level: 45,
+            hp: 1500,
+            damage: 95,
+            defense: 60,
+            exp: 2000,
+            gold: 700,
+            drops: [
+                { itemId: 'frozen_heart', chance: 0.2 },
+                { itemId: 'boss_essence', chance: 0.35 }
+            ],
+            attackSpeed: 2,
+            isBoss: true
+        },
+
+        // Swamp monsters
+        swamp_troll: {
+            id: 'swamp_troll',
+            name: 'Swamp Troll',
+            icon: '👹',
+            level: 14,
+            hp: 150,
+            damage: 22,
+            defense: 10,
+            exp: 120,
+            gold: 50,
+            drops: [],
+            attackSpeed: 2.5
+        },
+        giant_frog: {
+            id: 'giant_frog',
+            name: 'Giant Frog',
+            icon: '🐸',
+            level: 15,
+            hp: 90,
+            damage: 18,
+            defense: 8,
+            exp: 100,
+            gold: 45,
+            drops: [],
+            attackSpeed: 1.5
+        },
+        bog_witch: {
+            id: 'bog_witch',
+            name: 'Bog Witch',
+            icon: '🧙‍♀️',
+            level: 18,
+            hp: 110,
+            damage: 35,
+            defense: 5,
+            exp: 180,
+            gold: 80,
+            drops: [
+                { itemId: 'witch_brew', chance: 0.3 }
+            ],
+            attackSpeed: 2
         }
     };
 
     // Track unlocked zones
-    let unlockedZones = { town: true, forest_edge: true, copper_mine: true, pond: true };
+    let unlockedZones = { town: true, forest_edge: true, copper_mine: true, pond: true, crafting_hall: true };
 
     /**
      * Get zone by ID
@@ -579,7 +956,52 @@ const World = (function() {
      * Check if zone is unlocked
      */
     function isZoneUnlocked(zoneId) {
-        return unlockedZones[zoneId] || false;
+        if (!unlockedZones[zoneId]) return false;
+
+        // Also check skill requirements
+        const zone = zones[zoneId];
+        if (zone && zone.reqSkill) {
+            const char = typeof Character !== 'undefined' ? Character.getActive() : null;
+            if (char) {
+                const skill = typeof Skills !== 'undefined' ? Skills.getSkill(char.id, zone.reqSkill.skillId) : null;
+                if (!skill || skill.level < zone.reqSkill.level) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get zone requirements status
+     */
+    function getZoneRequirements(zoneId) {
+        const zone = zones[zoneId];
+        if (!zone) return { unlocked: false, meetsLevel: false, meetsSkill: true };
+
+        const char = typeof Character !== 'undefined' ? Character.getActive() : null;
+        const charLevel = char ? char.level : 1;
+
+        let meetsSkill = true;
+        let skillReq = null;
+
+        if (zone.reqSkill) {
+            skillReq = zone.reqSkill;
+            if (char) {
+                const skill = typeof Skills !== 'undefined' ? Skills.getSkill(char.id, zone.reqSkill.skillId) : null;
+                meetsSkill = skill && skill.level >= zone.reqSkill.level;
+            } else {
+                meetsSkill = false;
+            }
+        }
+
+        return {
+            unlocked: unlockedZones[zoneId] || false,
+            meetsLevel: charLevel >= zone.reqLevel,
+            meetsSkill,
+            skillReq
+        };
     }
 
     /**
@@ -658,6 +1080,16 @@ const World = (function() {
     }
 
     /**
+     * Get random monster definition from zone (without spawning)
+     * Used for AFK calculations
+     */
+    function getRandomMonster(zoneId) {
+        const zoneMonsters = getZoneMonsters(zoneId);
+        if (zoneMonsters.length === 0) return null;
+        return zoneMonsters[Math.floor(Math.random() * zoneMonsters.length)];
+    }
+
+    /**
      * Get state for saving
      */
     function getState() {
@@ -677,7 +1109,7 @@ const World = (function() {
      * Reset
      */
     function reset() {
-        unlockedZones = { town: true, forest_edge: true, copper_mine: true, pond: true };
+        unlockedZones = { town: true, forest_edge: true, copper_mine: true, pond: true, crafting_hall: true };
     }
 
     // Public API
@@ -686,6 +1118,7 @@ const World = (function() {
         getAllZones,
         getUnlockedZones,
         isZoneUnlocked,
+        getZoneRequirements,
         unlockZone,
         checkUnlocks,
         getMonster,
@@ -693,6 +1126,7 @@ const World = (function() {
         getZoneMonsters,
         getZoneActivities,
         spawnMonster,
+        getRandomMonster,
         getState,
         loadState,
         reset

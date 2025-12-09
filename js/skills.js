@@ -118,9 +118,18 @@ const Skills = (function() {
 
     /**
      * Calculate exp needed for skill level
+     * Similar to character leveling - harsh scaling
      */
     function expForLevel(level) {
-        return Math.floor(100 * Math.pow(1.4, level - 1));
+        // Skill leveling is separate from character but follows similar curve
+        if (level <= 15) {
+            return Math.floor(30 * Math.pow(level, 1.7));
+        } else if (level <= 40) {
+            return Math.floor(30 * Math.pow(15, 1.7) + (level - 15) * 200 * Math.pow(1.12, level - 15));
+        } else {
+            const base40 = 30 * Math.pow(15, 1.7) + 25 * 200 * Math.pow(1.12, 25);
+            return Math.floor(base40 + (level - 40) * 2000 * Math.pow(1.18, level - 40));
+        }
     }
 
     /**

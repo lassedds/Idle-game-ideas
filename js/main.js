@@ -45,6 +45,7 @@ const Game = (function() {
         UI.updateCharacterInfo();
         UI.renderZones();
         UI.renderInventory();
+        UI.renderShop();
         UI.renderQuests();
         UI.renderSkills();
         UI.renderTalents();
@@ -261,10 +262,26 @@ const Game = (function() {
             Combat.processRegen(i, deltaTime);
         });
 
+        // Process AFK income for inactive characters
+        const afkResults = Character.processAfkIncome(deltaTime);
+        if (afkResults && afkResults.length > 0) {
+            // Log AFK gains (but not too spammy - only occasionally)
+            if (Math.random() < 0.1) {
+                const result = afkResults[0];
+                if (result.type === 'combat') {
+                    UI.addLogEntry(`${result.charName} (AFK): +${result.gold}g, +${result.exp} XP`);
+                } else {
+                    const item = Inventory.getItemDef(result.resource);
+                    UI.addLogEntry(`${result.charName} (AFK): +${result.amount} ${item ? item.name : result.resource}`);
+                }
+            }
+        }
+
         // Periodic UI updates (every second)
         if (Math.floor(now / 1000) !== Math.floor((now - deltaTime * 1000) / 1000)) {
             UI.updateCharacterInfo();
             UI.updateGold();
+            UI.renderInventory();
 
             // Check for zone unlocks based on highest character level
             const chars = Character.getAll();

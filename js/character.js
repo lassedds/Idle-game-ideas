@@ -147,9 +147,27 @@ const Character = (function() {
 
     /**
      * Calculate experience needed for level
+     * MapleStory-style harsh scaling - early levels are quick,
+     * but later levels require exponentially more exp
      */
     function expForLevel(level) {
-        return Math.floor(100 * Math.pow(1.5, level - 1));
+        // Base exp with polynomial growth like MapleStory
+        // Level 1-10: Quick progression to get started
+        // Level 11-30: Moderate grind
+        // Level 31-50: Serious grind
+        // Level 51+: End-game dedication required
+        if (level <= 10) {
+            return Math.floor(50 * Math.pow(level, 1.8));
+        } else if (level <= 30) {
+            return Math.floor(50 * Math.pow(10, 1.8) + (level - 10) * 500 * Math.pow(1.15, level - 10));
+        } else if (level <= 50) {
+            const base30 = 50 * Math.pow(10, 1.8) + 20 * 500 * Math.pow(1.15, 20);
+            return Math.floor(base30 + (level - 30) * 5000 * Math.pow(1.2, level - 30));
+        } else {
+            const base30 = 50 * Math.pow(10, 1.8) + 20 * 500 * Math.pow(1.15, 20);
+            const base50 = base30 + 20 * 5000 * Math.pow(1.2, 20);
+            return Math.floor(base50 + (level - 50) * 50000 * Math.pow(1.25, level - 50));
+        }
     }
 
     /**
@@ -195,6 +213,16 @@ const Character = (function() {
         char.hp = char.maxHp;
         char.mp = char.maxMp;
 
+        // Grant talent point every 5 levels
+        if (char.level % 5 === 0 && typeof Talents !== 'undefined') {
+            Talents.addPoints(char.id, 1);
+        }
+
+        // Trigger UI update for character slots
+        if (typeof UI !== 'undefined' && UI.renderCharacterSlots) {
+            UI.renderCharacterSlots();
+        }
+
         return true;
     }
 
@@ -213,7 +241,7 @@ const Character = (function() {
             for (const slot in char.equipment) {
                 const itemId = char.equipment[slot];
                 if (itemId) {
-                    const item = Inventory.getItem(itemId);
+                    const item = Inventory.getItemDef(itemId);
                     if (item && item.stats) {
                         for (const stat in item.stats) {
                             char.stats[stat] = (char.stats[stat] || 0) + item.stats[stat];
@@ -363,6 +391,105 @@ const Character = (function() {
     }
 
     /**
+     * Get multi-character bonuses based on total characters
+     * More characters = better bonuses for everyone
+     */
+    function getMultiCharBonuses() {
+        const count = characters.length;
+        return {
+            expBonus: 1 + (count - 1) * 0.05,       // +5% EXP per extra character
+            goldBonus: 1 + (count - 1) * 0.03,     // +3% gold per extra character
+            dropBonus: 1 + (count - 1) * 0.02,     // +2% drop rate per extra character
+            skillExpBonus: 1 + (count - 1) * 0.04, // +4% skill exp per extra character
+            afkEfficiency: 0.2 + count * 0.05      // Base 20% + 5% per character for AFK
+        };
+    }
+
+    /**
+     * Get AFK income for inactive characters
+     * Each inactive character earns resources at reduced rate
+     */
+    function processAfkIncome(deltaTime) {
+        const bonuses = getMultiCharBonuses();
+        const afkResults = [];
+
+        characters.forEach((char, index) => {
+            // Skip active character
+            if (index === activeCharacterIndex) return;
+
+            // If character has an activity set, process AFK income
+            if (char.activity && char.activityZone) {
+                const zone = World.getZone(char.activityZone);
+                if (!zone) return;
+
+                const activity = zone.activities.find(a => a.type === char.activity);
+                if (!activity) return;
+
+                // AFK efficiency is reduced
+                const efficiency = bonuses.afkEfficiency * Skills.getEfficiency(char.id, char.activity);
+                const timePerAction = activity.timePerAction || 3;
+                const progressPerSecond = efficiency / timePerAction;
+
+                char.activityProgress = (char.activityProgress || 0) + progressPerSecond * deltaTime;
+
+                // Check if action completed
+                if (char.activityProgress >= 1) {
+                    char.activityProgress = 0;
+
+                    if (char.activity === 'combat') {
+                        // AFK combat gives reduced gold and exp, no drops
+                        const monster = World.getRandomMonster(char.activityZone);
+                        if (monster) {
+                            const goldEarned = Math.floor(monster.gold * 0.5 * bonuses.goldBonus);
+                            const expEarned = Math.floor(monster.exp * 0.3 * bonuses.expBonus);
+                            Inventory.addGold(goldEarned);
+                            addExp(index, expEarned);
+                            afkResults.push({
+                                charName: char.name,
+                                type: 'combat',
+                                gold: goldEarned,
+                                exp: expEarned
+                            });
+                        }
+                    } else if (activity.resource) {
+                        // AFK gathering gives reduced resources
+                        const yieldBonus = Skills.getYieldBonus(char.id, char.activity);
+                        const baseAmount = Math.floor(yieldBonus * 0.5);
+                        const amount = Math.max(1, baseAmount);
+
+                        // 50% chance to get resource per action
+                        if (Math.random() < 0.5) {
+                            Inventory.addItem(activity.resource, amount);
+                            Skills.addExp(char.id, char.activity, Math.floor((activity.expPerAction || 10) * 0.5 * bonuses.skillExpBonus));
+                            afkResults.push({
+                                charName: char.name,
+                                type: char.activity,
+                                resource: activity.resource,
+                                amount: amount
+                            });
+                        }
+                    }
+                }
+            }
+        });
+
+        return afkResults;
+    }
+
+    /**
+     * Set AFK activity for a character
+     */
+    function setAfkActivity(charIndex, activity, zone) {
+        const char = characters[charIndex];
+        if (!char || charIndex === activeCharacterIndex) return false;
+
+        char.activity = activity;
+        char.activityZone = zone;
+        char.activityProgress = 0;
+        return true;
+    }
+
+    /**
      * Get state for saving
      */
     function getState() {
@@ -413,6 +540,9 @@ const Character = (function() {
         respawn,
         getClasses,
         getClass,
+        getMultiCharBonuses,
+        processAfkIncome,
+        setAfkActivity,
         getState,
         loadState,
         reset,
