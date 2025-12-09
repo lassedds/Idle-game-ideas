@@ -39,6 +39,19 @@ body {
     overflow-x: hidden;
 }
 
+/* SVG Icon Styles */
+.icon {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+.icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
 /* Game Container */
 #game-container {
     display: flex;
