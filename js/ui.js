@@ -980,21 +980,16 @@ const UI = (function() {
      * Setup talent tabs
      */
     function setupTalentTabs() {
-        document.querySelectorAll('.tree-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentTalentTree = btn.dataset.tree;
-                document.querySelectorAll('.tree-tab').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderTalents();
-            });
-        });
+        // Tabs are now dynamically rendered in renderTalents
     }
 
     /**
-     * Render talents
+     * Render talents - New lane-based system
      */
     function renderTalents() {
         const container = document.getElementById('talent-tree-content');
+        const pointsDisplay = document.getElementById('talent-points');
+        const treeTabs = document.getElementById('talent-tree-tabs');
         if (!container) return;
 
         const char = Character.getActive();
@@ -1005,43 +1000,105 @@ const UI = (function() {
         }
 
         const trees = Talents.getTrees();
-        const tree = trees[currentTalentTree];
         const points = Talents.getPoints(char.id);
+        const totalSpent = Talents.getTotalSpent(char.id);
 
-        const pointsDisplay = document.getElementById('talent-points');
-        if (pointsDisplay) pointsDisplay.textContent = points;
+        // Update points display
+        if (pointsDisplay) {
+            pointsDisplay.textContent = `${points} (${totalSpent}/${Talents.MAX_TOTAL_POINTS} spent)`;
+        }
 
-        container.innerHTML = '';
-
-        for (const talentId in tree.talents) {
-            const talent = tree.talents[talentId];
-            const level = Talents.getTalentLevel(char.id, talentId);
-            const cost = talent.cost(level);
-            const isMaxed = level >= talent.maxLevel;
-            const canAfford = points >= cost;
-            const prereqMet = !talent.prereq || Talents.getTalentLevel(char.id, talent.prereq) > 0;
-
-            const div = document.createElement('div');
-            div.className = `talent-node ${isMaxed ? 'maxed' : ''} ${!prereqMet ? 'locked' : ''}`;
-            div.innerHTML = `
-                <div class="talent-icon">${talent.icon}</div>
-                <div class="talent-name">${talent.name}</div>
-                <div class="talent-level">${level}/${talent.maxLevel}</div>
-                ${!isMaxed ? `<div class="talent-cost">Cost: ${cost}</div>` : ''}
-            `;
-            div.title = talent.description;
-
-            if (!isMaxed && prereqMet && canAfford) {
-                div.style.cursor = 'pointer';
-                div.addEventListener('click', () => {
-                    if (Talents.allocate(char.id, currentTalentTree, talentId)) {
-                        renderTalents();
-                        updateCharacterInfo();
-                    }
+        // Render tree tabs
+        if (treeTabs) {
+            treeTabs.innerHTML = '';
+            for (const treeId in trees) {
+                const tree = trees[treeId];
+                const btn = document.createElement('button');
+                btn.className = `tree-tab ${currentTalentTree === treeId ? 'active' : ''}`;
+                btn.innerHTML = `${tree.icon} ${tree.name}`;
+                if (currentTalentTree === treeId) {
+                    btn.style.background = tree.color;
+                    btn.style.borderColor = tree.color;
+                }
+                btn.addEventListener('click', () => {
+                    currentTalentTree = treeId;
+                    renderTalents();
                 });
+                treeTabs.appendChild(btn);
+            }
+        }
+
+        const activeTree = trees[currentTalentTree];
+        if (!activeTree) {
+            container.innerHTML = '<p class="hint">No talents available.</p>';
+            return;
+        }
+
+        // Build talent content
+        container.innerHTML = `
+            <div class="tree-header" style="border-left: 4px solid ${activeTree.color}">
+                <h4>${activeTree.icon} ${activeTree.name}</h4>
+                <p class="tree-desc">${activeTree.description}</p>
+            </div>
+            <div class="lanes-container"></div>
+        `;
+
+        const lanesContainer = container.querySelector('.lanes-container');
+
+        // Render each lane
+        for (const laneId in activeTree.lanes) {
+            const lane = activeTree.lanes[laneId];
+            const progress = Talents.getLaneProgress(char.id, currentTalentTree, laneId);
+
+            const laneDiv = document.createElement('div');
+            laneDiv.className = 'talent-lane';
+            laneDiv.innerHTML = `
+                <div class="lane-header">
+                    <span class="lane-name">${lane.name}</span>
+                    <span class="lane-progress">${progress.current}/${progress.max}</span>
+                </div>
+                <p class="lane-desc">${lane.description}</p>
+                <div class="lane-talents"></div>
+            `;
+
+            const talentsDiv = laneDiv.querySelector('.lane-talents');
+
+            // Render talents in this lane
+            for (const talent of lane.talents) {
+                const level = Talents.getTalentLevel(char.id, talent.id);
+                const cost = Talents.getTalentCost(talent.id, level);
+                const canAfford = points >= cost;
+                const maxed = level >= talent.maxLevel;
+                const prereqMet = Talents.isPrereqMet(char.id, talent.prereq);
+                const atMax = totalSpent >= Talents.MAX_TOTAL_POINTS;
+
+                const div = document.createElement('div');
+                div.className = `talent-node ${maxed ? 'maxed' : ''} ${!prereqMet ? 'locked' : ''} ${level > 0 ? 'invested' : ''}`;
+                div.innerHTML = `
+                    <div class="talent-icon">${talent.icon}</div>
+                    <div class="talent-info">
+                        <div class="talent-name">${talent.name}</div>
+                        <div class="talent-desc">${talent.description}</div>
+                        <div class="talent-level">${level}/${talent.maxLevel}</div>
+                    </div>
+                    ${!maxed && prereqMet && !atMax ? `<div class="talent-cost ${!canAfford ? 'cant-afford' : ''}">Cost: ${cost}</div>` : ''}
+                `;
+
+                if (!maxed && prereqMet && canAfford && !atMax) {
+                    div.style.cursor = 'pointer';
+                    div.addEventListener('click', () => {
+                        if (Talents.allocate(char.id, talent.id)) {
+                            renderTalents();
+                            updateCharacterInfo();
+                            showNotification(`Upgraded ${talent.name}!`, 'success');
+                        }
+                    });
+                }
+
+                talentsDiv.appendChild(div);
             }
 
-            container.appendChild(div);
+            lanesContainer.appendChild(laneDiv);
         }
     }
 

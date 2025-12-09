@@ -954,28 +954,101 @@ body {
 }
 
 #talent-tree-content {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: 20px;
 }
 
-.talent-node {
+/* Talent tree header */
+.tree-header {
+    padding: 15px;
+    background: var(--bg-panel);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.tree-header h4 {
+    margin: 0 0 5px 0;
+    color: var(--accent-gold);
+}
+
+.tree-desc {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Lanes container */
+.lanes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+/* Individual lane */
+.talent-lane {
     background: var(--bg-panel);
     border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 15px;
-    text-align: center;
-    cursor: pointer;
+}
+
+.lane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.lane-name {
+    font-weight: bold;
+    color: var(--accent-blue);
+}
+
+.lane-progress {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--bg-dark);
+    padding: 3px 8px;
+    border-radius: 10px;
+}
+
+.lane-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0 0 10px 0;
+}
+
+.lane-talents {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.talent-node {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg-dark);
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px;
     transition: all 0.2s;
 }
 
-.talent-node:hover {
+.talent-node:hover:not(.locked) {
     border-color: var(--accent-blue);
+    transform: translateX(5px);
 }
 
 .talent-node.maxed {
     border-color: var(--accent-gold);
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.talent-node.invested {
+    border-color: var(--accent-green);
+    background: rgba(76, 175, 80, 0.1);
 }
 
 .talent-node.locked {
@@ -984,24 +1057,44 @@ body {
 }
 
 .talent-icon {
-    font-size: 2rem;
-    margin-bottom: 8px;
+    font-size: 1.8rem;
+    width: 40px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.talent-info {
+    flex: 1;
+    min-width: 0;
 }
 
 .talent-name {
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
+}
+
+.talent-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
 }
 
 .talent-level {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--accent-blue);
 }
 
 .talent-cost {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-top: 5px;
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+    background: var(--bg-panel);
+    padding: 4px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.talent-cost.cant-afford {
+    color: var(--accent-red);
 }
 
 /* Right Panel */
