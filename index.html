@@ -197,6 +197,109 @@
 
         <!-- Item tooltip -->
         <div id="item-tooltip" class="tooltip hidden"></div>
+
+        <!-- Boss Battle Screen -->
+        <div id="boss-battle-screen" class="hidden">
+            <div class="battle-arena">
+                <!-- Terrain indicator -->
+                <div id="battle-terrain" class="terrain-indicator">
+                    <span id="terrain-name">Normal Arena</span>
+                    <span id="terrain-turns"></span>
+                </div>
+
+                <!-- Boss panel -->
+                <div class="boss-battle-panel">
+                    <div class="boss-info-card">
+                        <div class="boss-header">
+                            <span id="boss-battle-icon" class="battle-icon"></span>
+                            <div class="boss-title">
+                                <h2 id="boss-battle-name">Boss Name</h2>
+                                <div id="boss-battle-types" class="type-badges"></div>
+                            </div>
+                            <span id="boss-battle-level" class="level-badge">Lv. 1</span>
+                        </div>
+                        <div class="hp-bar-container">
+                            <div class="hp-bar boss-hp">
+                                <div id="boss-battle-hp-fill" class="hp-fill"></div>
+                                <span id="boss-battle-hp-text" class="hp-text">1000/1000</span>
+                            </div>
+                        </div>
+                        <div class="battle-stats">
+                            <div class="stat-display">
+                                <span class="stat-label">Chaos:</span>
+                                <div class="chaos-bar">
+                                    <div id="boss-chaos-fill" class="bar-fill chaos"></div>
+                                    <span id="boss-chaos-text">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-label">Corruption:</span>
+                                <div class="corruption-bar">
+                                    <div id="boss-corruption-fill" class="bar-fill corruption"></div>
+                                    <span id="boss-corruption-text">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battle log center -->
+                <div class="battle-log-center">
+                    <div id="battle-messages"></div>
+                    <div class="battle-indicators">
+                        <div id="battle-combo" class="indicator hidden">Combo x<span id="combo-count">0</span></div>
+                        <div id="battle-resonance" class="indicator hidden">Resonance Active!</div>
+                    </div>
+                </div>
+
+                <!-- Player panel -->
+                <div class="player-battle-panel">
+                    <div class="player-info-card">
+                        <div class="player-header">
+                            <span id="player-battle-level" class="level-badge">Lv. 1</span>
+                            <div class="player-title">
+                                <h2 id="player-battle-name">Player Name</h2>
+                                <div id="player-battle-types" class="type-badges"></div>
+                            </div>
+                        </div>
+                        <div class="hp-bar-container">
+                            <div class="hp-bar player-hp">
+                                <div id="player-battle-hp-fill" class="hp-fill"></div>
+                                <span id="player-battle-hp-text" class="hp-text">100/100</span>
+                            </div>
+                        </div>
+                        <div class="battle-stats">
+                            <div class="stat-display">
+                                <span class="stat-label">Chaos:</span>
+                                <div class="chaos-bar">
+                                    <div id="player-chaos-fill" class="bar-fill chaos"></div>
+                                    <span id="player-chaos-text">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-label">Corruption:</span>
+                                <div class="corruption-bar">
+                                    <div id="player-corruption-fill" class="bar-fill corruption"></div>
+                                    <span id="player-corruption-text">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Move selection -->
+                    <div class="move-selection">
+                        <h3>Select Move</h3>
+                        <div id="battle-moves" class="battle-moves-grid"></div>
+                        <button id="flee-battle-btn" class="flee-btn">Flee Battle</button>
+                    </div>
+                </div>
+
+                <!-- Turn counter -->
+                <div class="turn-counter">
+                    Turn <span id="battle-turn">1</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts (modular) - load order matters -->
@@ -206,6 +309,8 @@
     <script src="js/inventory.js"></script>
     <script src="js/world.js"></script>
     <script src="js/combat.js"></script>
+    <script src="js/boss-combat.js"></script>
+    <script src="js/boss-battle-ui.js"></script>
     <script src="js/quests.js"></script>
     <script src="js/talents.js"></script>
     <script src="js/ui.js"></script>
