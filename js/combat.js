@@ -20,6 +20,19 @@ const Combat = (function() {
         const monster = World.spawnMonster(zoneId);
         if (!monster) return null;
 
+        // 🎪 Check if this is a BOSS - start Pokemon-style turn-based battle instead
+        const bosses = BossCombat.getAllBosses();
+        if (bosses[monster.id]) {
+            // This is a boss! Start turn-based battle
+            const battle = BossCombat.startBossBattle(monster.id, charIndex);
+            if (battle) {
+                BossBattleUI.show(battle);
+                // Set character activity to boss battle
+                Character.setActivity(charIndex, 'boss_battle', zoneId);
+                return { type: 'boss', battle };
+            }
+        }
+
         combatState[charIndex] = {
             monster: monster,
             zoneId: zoneId,
