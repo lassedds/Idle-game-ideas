@@ -1451,6 +1451,83 @@ body {
     background: var(--accent-blue);
 }
 
+/* Section Headers for Quests, Shop, Inventory */
+.section-header {
+    color: var(--accent-gold);
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin: 20px 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header:first-child {
+    margin-top: 0;
+}
+
+.section-header.collapsible {
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.section-header.collapsible:hover {
+    color: var(--accent-blue);
+}
+
+.collapse-arrow {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+}
+
+.quest-section.collapsed .collapse-arrow {
+    transform: rotate(-90deg);
+}
+
+.quest-section.collapsed .section-content {
+    display: none;
+}
+
+.quest-section .section-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Shop Sections */
+.shop-section {
+    margin-bottom: 20px;
+}
+
+.shop-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
+}
+
+#shop-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Inventory Sections */
+.inventory-section {
+    margin-bottom: 20px;
+}
+
+.inventory-items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 8px;
+}
+
+#inventory-grid {
+    display: flex;
+    flex-direction: column;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     #game-layout {
