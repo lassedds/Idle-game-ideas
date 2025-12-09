@@ -80,6 +80,7 @@
                     <button class="main-tab" data-tab="shop">🏪 Shop</button>
                     <button class="main-tab" data-tab="quests">📜 Quests</button>
                     <button class="main-tab" data-tab="talents">✨ Talents</button>
+                    <button class="main-tab" data-tab="multiplayer">🌐 Multiplayer</button>
                 </div>
 
                 <!-- World tab - Zone selection and activity -->
@@ -136,6 +137,71 @@
                         <button class="tree-tab" data-tree="misc">✨ Misc</button>
                     </div>
                     <div id="talent-tree-content"></div>
+                </div>
+
+                <!-- Multiplayer tab -->
+                <div id="multiplayer-tab" class="main-content">
+                    <div class="multiplayer-container">
+                        <!-- Connection Section -->
+                        <div class="mp-section connection-section">
+                            <h3>🌐 Local Multiplayer</h3>
+                            <p class="hint">Connect to a local server to compete on leaderboards and chat with other players!</p>
+
+                            <div class="connection-controls">
+                                <div class="connection-status">
+                                    Status: <span id="mp-status"><span class="status-disconnected">🔴 Disconnected</span></span>
+                                </div>
+
+                                <div class="server-input-group">
+                                    <label for="mp-server-input">Server Address:</label>
+                                    <input type="text" id="mp-server-input" placeholder="ws://localhost:8080" />
+                                </div>
+
+                                <div class="connection-buttons">
+                                    <button id="mp-connect-btn" class="btn-primary">Connect</button>
+                                    <button id="mp-disconnect-btn" class="btn-secondary" disabled>Disconnect</button>
+                                </div>
+
+                                <div class="auto-connect-option">
+                                    <label>
+                                        <input type="checkbox" id="mp-auto-connect" />
+                                        Auto-connect on game start
+                                    </label>
+                                </div>
+
+                                <div id="mp-error" class="mp-error hidden"></div>
+                            </div>
+
+                            <div class="server-instructions">
+                                <h4>How to start a server:</h4>
+                                <ol>
+                                    <li>Open a terminal in the <code>server/</code> folder</li>
+                                    <li>Run: <code>npm install</code> (first time only)</li>
+                                    <li>Run: <code>npm start</code></li>
+                                    <li>Share the server address with players on your network!</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <!-- Leaderboard Section -->
+                        <div class="mp-section leaderboard-section">
+                            <div id="mp-leaderboard">
+                                <p class="hint">Connect to a server to see the leaderboard!</p>
+                            </div>
+                        </div>
+
+                        <!-- Chat Section -->
+                        <div class="mp-section chat-section">
+                            <h4>💬 Chat</h4>
+                            <div id="mp-chat-messages" class="chat-messages">
+                                <p class="hint">Connect to start chatting!</p>
+                            </div>
+                            <div class="chat-input-group">
+                                <input type="text" id="mp-chat-input" placeholder="Type a message..." maxlength="200" />
+                                <button id="mp-chat-send" class="btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
 
@@ -313,6 +379,8 @@
     <script src="js/boss-battle-ui.js"></script>
     <script src="js/quests.js"></script>
     <script src="js/talents.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/multiplayer-ui.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/save.js"></script>
     <script src="js/main.js"></script>
