@@ -25,6 +25,12 @@ const Game = (function() {
         // Initialize UI
         UI.init();
 
+        // Initialize multiplayer
+        if (typeof Multiplayer !== 'undefined') {
+            Multiplayer.init();
+            MultiplayerUI.init();
+        }
+
         // Try to load saved game
         const loaded = SaveSystem.load();
         if (!loaded) {

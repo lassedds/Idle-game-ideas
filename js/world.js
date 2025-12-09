@@ -346,7 +346,7 @@ const World = (function() {
         slime: {
             id: 'slime',
             name: 'Slime',
-            icon: '🟢',
+            icon: Icons.monsters.slime,
             level: 1,
             hp: 20,
             damage: 3,
@@ -406,7 +406,7 @@ const World = (function() {
         wolf: {
             id: 'wolf',
             name: 'Wolf',
-            icon: '🐺',
+            icon: Icons.monsters.wolf,
             level: 6,
             hp: 60,
             damage: 15,
@@ -570,7 +570,7 @@ const World = (function() {
         skeleton: {
             id: 'skeleton',
             name: 'Skeleton',
-            icon: '💀',
+            icon: Icons.monsters.skeleton,
             level: 26,
             hp: 150,
             damage: 35,
@@ -583,7 +583,7 @@ const World = (function() {
         ghost: {
             id: 'ghost',
             name: 'Ghost',
-            icon: '👻',
+            icon: Icons.monsters.ghost,
             level: 30,
             hp: 120,
             damage: 50,
@@ -665,7 +665,7 @@ const World = (function() {
         dragon: {
             id: 'dragon',
             name: 'Ancient Dragon',
-            icon: '🐉',
+            icon: Icons.monsters.dragon,
             level: 75,
             hp: 5000,
             damage: 200,
@@ -819,7 +819,7 @@ const World = (function() {
         frost_wolf: {
             id: 'frost_wolf',
             name: 'Frost Wolf',
-            icon: '🐺',
+            icon: Icons.monsters.wolf,
             level: 20,
             hp: 140,
             damage: 30,

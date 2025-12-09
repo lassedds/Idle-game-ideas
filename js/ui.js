@@ -5,9 +5,6 @@
 
 const UI = (function() {
     let currentTab = 'world';
-    let currentQuestFilter = 'active';
-    let currentInventoryFilter = 'all';
-    let currentShopFilter = 'all';
     let currentTalentTree = 'combat';
     let selectedClass = null;
 
@@ -17,9 +14,6 @@ const UI = (function() {
     function init() {
         setupTabNavigation();
         setupCharacterCreation();
-        setupInventoryFilters();
-        setupShopFilters();
-        setupQuestFilters();
         setupTalentTabs();
         setupSaveButton();
         renderClassSelection();
@@ -518,22 +512,9 @@ const UI = (function() {
         if (activityArea) activityArea.classList.add('hidden');
     }
 
-    /**
-     * Setup inventory filters
-     */
-    function setupInventoryFilters() {
-        document.querySelectorAll('.inventory-filters .filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentInventoryFilter = btn.dataset.filter;
-                document.querySelectorAll('.inventory-filters .filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderInventory();
-            });
-        });
-    }
 
     /**
-     * Render inventory
+     * Render inventory - Sectioned view showing all item types at once
      */
     function renderInventory() {
         const container = document.getElementById('inventory-grid');
@@ -544,24 +525,66 @@ const UI = (function() {
 
         container.innerHTML = '';
 
+        // Categorize inventory items
+        const categories = {
+            equipment: { name: '⚔️ Equipment', items: [] },
+            consumables: { name: '🧪 Consumables', items: [] },
+            tools: { name: '⛏️ Tools', items: [] },
+            resources: { name: '📦 Resources', items: [] }
+        };
+
+        // Categorize items
         for (const itemId in items) {
             const quantity = items[itemId];
             const def = allDefs[itemId];
-
             if (!def) continue;
-            if (currentInventoryFilter !== 'all' && def.type !== currentInventoryFilter) continue;
 
-            const div = document.createElement('div');
-            div.className = `inventory-slot rarity-${def.rarity}`;
-            div.innerHTML = `
-                ${def.icon}
-                ${quantity > 1 ? `<span class="quantity">${quantity}</span>` : ''}
-            `;
-            div.addEventListener('mouseenter', (e) => showItemTooltip(e, def));
-            div.addEventListener('mouseleave', hideTooltip);
-            div.addEventListener('click', () => handleItemClick(itemId));
-            div.addEventListener('contextmenu', (e) => handleItemRightClick(e, itemId));
-            container.appendChild(div);
+            const itemData = { def, quantity, itemId };
+
+            if (def.type === 'equipment') {
+                categories.equipment.items.push(itemData);
+            } else if (def.type === 'consumable') {
+                categories.consumables.items.push(itemData);
+            } else if (def.type === 'tool') {
+                categories.tools.items.push(itemData);
+            } else if (def.type === 'resource') {
+                categories.resources.items.push(itemData);
+            }
+        }
+
+        // Render each category
+        let hasItems = false;
+        Object.values(categories).forEach(category => {
+            if (category.items.length === 0) return;
+            hasItems = true;
+
+            const section = document.createElement('div');
+            section.className = 'inventory-section';
+            section.innerHTML = `<h4 class="section-header">${category.name}</h4>`;
+
+            const itemsGrid = document.createElement('div');
+            itemsGrid.className = 'inventory-items-grid';
+
+            category.items.forEach(({ def, quantity, itemId }) => {
+                const div = document.createElement('div');
+                div.className = `inventory-slot rarity-${def.rarity}`;
+                div.innerHTML = `
+                    ${def.icon}
+                    ${quantity > 1 ? `<span class="quantity">${quantity}</span>` : ''}
+                `;
+                div.addEventListener('mouseenter', (e) => showItemTooltip(e, def));
+                div.addEventListener('mouseleave', hideTooltip);
+                div.addEventListener('click', () => handleItemClick(itemId));
+                div.addEventListener('contextmenu', (e) => handleItemRightClick(e, itemId));
+                itemsGrid.appendChild(div);
+            });
+
+            section.appendChild(itemsGrid);
+            container.appendChild(section);
+        });
+
+        if (!hasItems) {
+            container.innerHTML = '<p class="hint">Your inventory is empty. Gather resources or buy items from the shop!</p>';
         }
     }
 
@@ -707,22 +730,9 @@ const UI = (function() {
         if (tooltip) tooltip.classList.add('hidden');
     }
 
-    /**
-     * Setup shop filters
-     */
-    function setupShopFilters() {
-        document.querySelectorAll('.shop-filters .filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentShopFilter = btn.dataset.filter;
-                document.querySelectorAll('.shop-filters .filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderShop();
-            });
-        });
-    }
 
     /**
-     * Render shop
+     * Render shop - Sectioned view showing all categories at once
      */
     function renderShop() {
         const container = document.getElementById('shop-grid');
@@ -735,60 +745,94 @@ const UI = (function() {
 
         container.innerHTML = '';
 
-        // Shop items (equipment, consumables, tools)
-        const shopItems = Object.values(allDefs).filter(item => {
-            if (item.type === 'resource') return false; // Don't sell raw resources
+        // Categorize shop items
+        const categories = {
+            weapons: { name: '⚔️ Weapons', items: [] },
+            armor: { name: '🛡️ Armor & Helmets', items: [] },
+            accessories: { name: '💍 Accessories', items: [] },
+            consumables: { name: '🧪 Consumables', items: [] },
+            tools: { name: '⛏️ Tools', items: [] }
+        };
 
-            // Filter by category
-            if (currentShopFilter !== 'all') {
-                if (currentShopFilter === 'weapon' && item.slot !== 'weapon') return false;
-                if (currentShopFilter === 'armor' && !['armor', 'helmet', 'gloves', 'boots'].includes(item.slot)) return false;
-                if (currentShopFilter === 'consumable' && item.type !== 'consumable') return false;
-                if (currentShopFilter === 'tool' && item.type !== 'tool') return false;
+        // Filter and categorize items
+        Object.values(allDefs).forEach(item => {
+            if (item.type === 'resource') return; // Don't sell raw resources
+
+            if (item.type === 'equipment') {
+                if (item.slot === 'weapon') {
+                    categories.weapons.items.push(item);
+                } else if (['armor', 'helmet', 'gloves', 'boots'].includes(item.slot)) {
+                    categories.armor.items.push(item);
+                } else if (['ring', 'amulet'].includes(item.slot)) {
+                    categories.accessories.items.push(item);
+                }
+            } else if (item.type === 'consumable') {
+                categories.consumables.items.push(item);
+            } else if (item.type === 'tool') {
+                categories.tools.items.push(item);
             }
-
-            return true;
         });
 
-        // Sort by level requirement, then by value
-        shopItems.sort((a, b) => {
-            const levelA = a.reqLevel || 0;
-            const levelB = b.reqLevel || 0;
-            if (levelA !== levelB) return levelA - levelB;
-            return a.value - b.value;
+        // Sort items in each category
+        Object.values(categories).forEach(category => {
+            category.items.sort((a, b) => {
+                const levelA = a.reqLevel || 0;
+                const levelB = b.reqLevel || 0;
+                if (levelA !== levelB) return levelA - levelB;
+                return a.value - b.value;
+            });
         });
 
-        shopItems.forEach(item => {
-            const canAfford = gold >= item.value;
-            const meetsLevel = !item.reqLevel || charLevel >= item.reqLevel;
+        // Render each category
+        Object.values(categories).forEach(category => {
+            if (category.items.length === 0) return;
 
-            const div = document.createElement('div');
-            div.className = `shop-item rarity-${item.rarity} ${!canAfford || !meetsLevel ? 'disabled' : ''}`;
-            div.innerHTML = `
-                <div class="shop-item-icon">${item.icon}</div>
-                <div class="shop-item-info">
-                    <div class="shop-item-name" style="color: ${Inventory.getRarityColor(item.rarity)}">${item.name}</div>
-                    <div class="shop-item-type">${item.type}${item.reqLevel ? ` • Lv.${item.reqLevel}` : ''}</div>
-                    ${item.stats ? `<div class="shop-item-stats">${Object.entries(item.stats).map(([k,v]) => `+${v} ${k.toUpperCase()}`).join(', ')}</div>` : ''}
-                </div>
-                <div class="shop-item-price ${!canAfford ? 'too-expensive' : ''}">
-                    💰 ${item.value}
-                </div>
-            `;
+            const section = document.createElement('div');
+            section.className = 'shop-section';
+            section.innerHTML = `<h4 class="section-header">${category.name}</h4>`;
 
-            if (canAfford && meetsLevel) {
-                div.addEventListener('click', () => buyItem(item.id));
-            }
+            const itemsGrid = document.createElement('div');
+            itemsGrid.className = 'shop-items-grid';
 
-            div.addEventListener('mouseenter', (e) => showItemTooltip(e, item));
-            div.addEventListener('mouseleave', hideTooltip);
+            category.items.forEach(item => {
+                const itemDiv = createShopItem(item, gold, charLevel);
+                itemsGrid.appendChild(itemDiv);
+            });
 
-            container.appendChild(div);
+            section.appendChild(itemsGrid);
+            container.appendChild(section);
         });
+    }
 
-        if (shopItems.length === 0) {
-            container.innerHTML = '<p class="hint">No items available in this category.</p>';
+    /**
+     * Create a shop item element
+     */
+    function createShopItem(item, gold, charLevel) {
+        const canAfford = gold >= item.value;
+        const meetsLevel = !item.reqLevel || charLevel >= item.reqLevel;
+
+        const div = document.createElement('div');
+        div.className = `shop-item rarity-${item.rarity} ${!canAfford || !meetsLevel ? 'disabled' : ''}`;
+        div.innerHTML = `
+            <div class="shop-item-icon">${item.icon}</div>
+            <div class="shop-item-info">
+                <div class="shop-item-name" style="color: ${Inventory.getRarityColor(item.rarity)}">${item.name}</div>
+                <div class="shop-item-type">${item.type}${item.reqLevel ? ` • Lv.${item.reqLevel}` : ''}</div>
+                ${item.stats ? `<div class="shop-item-stats">${Object.entries(item.stats).map(([k,v]) => `+${v} ${k.toUpperCase()}`).join(', ')}</div>` : ''}
+            </div>
+            <div class="shop-item-price ${!canAfford ? 'too-expensive' : ''}">
+                💰 ${item.value}
+            </div>
+        `;
+
+        if (canAfford && meetsLevel) {
+            div.addEventListener('click', () => buyItem(item.id));
         }
+
+        div.addEventListener('mouseenter', (e) => showItemTooltip(e, item));
+        div.addEventListener('mouseleave', hideTooltip);
+
+        return div;
     }
 
     /**
@@ -819,105 +863,129 @@ const UI = (function() {
         }
     }
 
-    /**
-     * Setup quest filters
-     */
-    function setupQuestFilters() {
-        document.querySelectorAll('.quest-filters .filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                currentQuestFilter = btn.dataset.filter;
-                document.querySelectorAll('.quest-filters .filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderQuests();
-            });
-        });
-    }
 
     /**
-     * Render quests
+     * Render quests - Sectioned view showing all quest types at once
      */
     function renderQuests() {
         const container = document.getElementById('quests-list');
         if (!container) return;
 
-        let quests = Quests.getAllQuests();
+        const allQuests = Quests.getAllQuests();
         const char = Character.getActive();
         const charLevel = char ? char.level : 1;
 
-        if (currentQuestFilter === 'active') {
-            // Show in-progress quests AND ready-to-complete quests
-            quests = quests.filter(q => q.status === 'active' || q.status === 'complete');
-        } else if (currentQuestFilter === 'available') {
-            // Show available quests that meet level requirements
-            quests = quests.filter(q => {
-                if (q.status !== 'available' || q.completed) return false;
-                if (q.reqLevel && charLevel < q.reqLevel) return false;
-                return true;
-            });
-        } else if (currentQuestFilter === 'completed') {
-            quests = quests.filter(q => q.completed);
-        }
+        // Group quests by status
+        const activeQuests = allQuests.filter(q => q.status === 'active' || q.status === 'complete');
+        const availableQuests = allQuests.filter(q => {
+            if (q.status !== 'available' || q.completed) return false;
+            return true;
+        });
+        const completedQuests = allQuests.filter(q => q.completed);
 
         container.innerHTML = '';
 
-        if (quests.length === 0) {
-            let hint = 'No quests found.';
-            if (currentQuestFilter === 'active') {
-                hint = 'No active quests. Check the Available tab to accept a quest!';
-            } else if (currentQuestFilter === 'available') {
-                hint = 'No available quests. Complete current quests to unlock more!';
-            }
-            container.innerHTML = `<p class="hint">${hint}</p>`;
-            return;
+        // Active Quests Section
+        if (activeQuests.length > 0) {
+            const activeSection = document.createElement('div');
+            activeSection.className = 'quest-section';
+            activeSection.innerHTML = '<h4 class="section-header">⚡ Active Quests</h4>';
+
+            activeQuests.forEach(quest => {
+                activeSection.appendChild(createQuestCard(quest, charLevel));
+            });
+
+            container.appendChild(activeSection);
         }
 
-        quests.forEach(quest => {
-            const div = document.createElement('div');
-            const isReady = quest.status === 'complete';
-            div.className = `quest-card ${isReady ? 'complete' : ''}`;
+        // Available Quests Section
+        if (availableQuests.length > 0) {
+            const availableSection = document.createElement('div');
+            availableSection.className = 'quest-section';
+            availableSection.innerHTML = '<h4 class="section-header">📋 Available Quests</h4>';
 
-            let objectivesHtml = quest.objectives.map(obj => {
-                const complete = obj.current >= obj.amount;
-                return `<div class="quest-objective ${complete ? 'complete' : ''}">
-                    ${complete ? '✓' : '○'} ${getObjectiveText(obj)} (${Math.min(obj.current, obj.amount)}/${obj.amount})
-                </div>`;
-            }).join('');
+            availableQuests.forEach(quest => {
+                availableSection.appendChild(createQuestCard(quest, charLevel));
+            });
 
-            let buttonHtml = '';
-            let statusHtml = '';
-            if (quest.status === 'available' && !quest.completed) {
-                const meetsLevel = !quest.reqLevel || charLevel >= quest.reqLevel;
-                if (meetsLevel) {
-                    buttonHtml = `<button class="quest-btn accept" onclick="Game.acceptQuest('${quest.id}')">Accept Quest</button>`;
-                } else {
-                    statusHtml = `<div class="quest-requirement">🔒 Requires Level ${quest.reqLevel}</div>`;
-                }
-            } else if (quest.status === 'complete') {
-                buttonHtml = `<button class="quest-btn complete" onclick="Game.completeQuest('${quest.id}')">🎉 Claim Reward!</button>`;
-            } else if (quest.status === 'active') {
-                statusHtml = `<div class="quest-status">📋 In Progress</div>`;
-            } else if (quest.completed) {
-                statusHtml = `<div class="quest-status completed">✅ Completed</div>`;
-            }
+            container.appendChild(availableSection);
+        }
 
-            div.innerHTML = `
-                <div class="quest-header">
-                    <span class="quest-name">${quest.name}</span>
-                    <span class="quest-type">${quest.type}</span>
-                </div>
-                <div class="quest-description">${quest.description}</div>
-                <div class="quest-objectives">${objectivesHtml}</div>
-                ${statusHtml}
-                <div class="quest-rewards">
-                    ${quest.rewards.exp ? `📈 ${quest.rewards.exp} XP` : ''}
-                    ${quest.rewards.gold ? `💰 ${quest.rewards.gold}` : ''}
-                    ${quest.rewards.items ? `🎁 ${quest.rewards.items.length} items` : ''}
-                </div>
-                ${buttonHtml}
+        // Completed Quests Section (collapsed by default)
+        if (completedQuests.length > 0) {
+            const completedSection = document.createElement('div');
+            completedSection.className = 'quest-section';
+            completedSection.innerHTML = `
+                <h4 class="section-header collapsible" onclick="this.parentElement.classList.toggle('collapsed')">
+                    ✅ Completed Quests (${completedQuests.length}) <span class="collapse-arrow">▼</span>
+                </h4>
+                <div class="section-content"></div>
             `;
+            completedSection.classList.add('collapsed');
 
-            container.appendChild(div);
-        });
+            const contentDiv = completedSection.querySelector('.section-content');
+            completedQuests.forEach(quest => {
+                contentDiv.appendChild(createQuestCard(quest, charLevel));
+            });
+
+            container.appendChild(completedSection);
+        }
+
+        // Show hint if no quests at all
+        if (activeQuests.length === 0 && availableQuests.length === 0 && completedQuests.length === 0) {
+            container.innerHTML = '<p class="hint">No quests available. Complete activities to unlock quests!</p>';
+        }
+    }
+
+    /**
+     * Create a quest card element
+     */
+    function createQuestCard(quest, charLevel) {
+        const div = document.createElement('div');
+        const isReady = quest.status === 'complete';
+        div.className = `quest-card ${isReady ? 'complete' : ''}`;
+
+        let objectivesHtml = quest.objectives.map(obj => {
+            const complete = obj.current >= obj.amount;
+            return `<div class="quest-objective ${complete ? 'complete' : ''}">
+                ${complete ? '✓' : '○'} ${getObjectiveText(obj)} (${Math.min(obj.current, obj.amount)}/${obj.amount})
+            </div>`;
+        }).join('');
+
+        let buttonHtml = '';
+        let statusHtml = '';
+        if (quest.status === 'available' && !quest.completed) {
+            const meetsLevel = !quest.reqLevel || charLevel >= quest.reqLevel;
+            if (meetsLevel) {
+                buttonHtml = `<button class="quest-btn accept" onclick="Game.acceptQuest('${quest.id}')">Accept Quest</button>`;
+            } else {
+                statusHtml = `<div class="quest-requirement">🔒 Requires Level ${quest.reqLevel}</div>`;
+            }
+        } else if (quest.status === 'complete') {
+            buttonHtml = `<button class="quest-btn complete" onclick="Game.completeQuest('${quest.id}')">🎉 Claim Reward!</button>`;
+        } else if (quest.status === 'active') {
+            statusHtml = `<div class="quest-status">📋 In Progress</div>`;
+        } else if (quest.completed) {
+            statusHtml = `<div class="quest-status completed">✅ Completed</div>`;
+        }
+
+        div.innerHTML = `
+            <div class="quest-header">
+                <span class="quest-name">${quest.name}</span>
+                <span class="quest-type">${quest.type}</span>
+            </div>
+            <div class="quest-description">${quest.description}</div>
+            <div class="quest-objectives">${objectivesHtml}</div>
+            ${statusHtml}
+            <div class="quest-rewards">
+                ${quest.rewards.exp ? `📈 ${quest.rewards.exp} XP` : ''}
+                ${quest.rewards.gold ? `💰 ${quest.rewards.gold}` : ''}
+                ${quest.rewards.items ? `🎁 ${quest.rewards.items.length} items` : ''}
+            </div>
+            ${buttonHtml}
+        `;
+
+        return div;
     }
 
     /**

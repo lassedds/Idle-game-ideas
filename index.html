@@ -80,6 +80,7 @@
                     <button class="main-tab" data-tab="shop">🏪 Shop</button>
                     <button class="main-tab" data-tab="quests">📜 Quests</button>
                     <button class="main-tab" data-tab="talents">✨ Talents</button>
+                    <button class="main-tab" data-tab="multiplayer">🌐 Multiplayer</button>
                 </div>
 
                 <!-- World tab - Zone selection and activity -->
@@ -105,44 +106,20 @@
 
                 <!-- Inventory tab -->
                 <div id="inventory-tab" class="main-content">
-                    <div class="inventory-header">
-                        <h3>🎒 Inventory</h3>
-                        <div class="inventory-filters">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="equipment">Equipment</button>
-                            <button class="filter-btn" data-filter="resource">Resources</button>
-                            <button class="filter-btn" data-filter="consumable">Consumables</button>
-                        </div>
-                    </div>
-                    <p class="hint" style="margin-bottom: 10px;">💡 Right-click items to sell them!</p>
+                    <h3>🎒 Inventory</h3>
+                    <p class="hint" style="margin-bottom: 10px;">💡 Left-click to use/equip • Right-click to sell</p>
                     <div id="inventory-grid"></div>
                 </div>
 
                 <!-- Shop tab -->
                 <div id="shop-tab" class="main-content">
-                    <div class="shop-header">
-                        <h3>🏪 Shop</h3>
-                        <div class="shop-filters">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="weapon">Weapons</button>
-                            <button class="filter-btn" data-filter="armor">Armor</button>
-                            <button class="filter-btn" data-filter="consumable">Consumables</button>
-                            <button class="filter-btn" data-filter="tool">Tools</button>
-                        </div>
-                    </div>
+                    <h3>🏪 Shop</h3>
                     <div id="shop-grid"></div>
                 </div>
 
                 <!-- Quests tab -->
                 <div id="quests-tab" class="main-content">
-                    <div class="quests-header">
-                        <h3>📜 Quests</h3>
-                        <div class="quest-filters">
-                            <button class="filter-btn active" data-filter="active">Active</button>
-                            <button class="filter-btn" data-filter="available">Available</button>
-                            <button class="filter-btn" data-filter="completed">Completed</button>
-                        </div>
-                    </div>
+                    <h3>📜 Quests</h3>
                     <div id="quests-list"></div>
                 </div>
 
@@ -160,6 +137,71 @@
                         <button class="tree-tab" data-tree="misc">✨ Misc</button>
                     </div>
                     <div id="talent-tree-content"></div>
+                </div>
+
+                <!-- Multiplayer tab -->
+                <div id="multiplayer-tab" class="main-content">
+                    <div class="multiplayer-container">
+                        <!-- Connection Section -->
+                        <div class="mp-section connection-section">
+                            <h3>🌐 Local Multiplayer</h3>
+                            <p class="hint">Connect to a local server to compete on leaderboards and chat with other players!</p>
+
+                            <div class="connection-controls">
+                                <div class="connection-status">
+                                    Status: <span id="mp-status"><span class="status-disconnected">🔴 Disconnected</span></span>
+                                </div>
+
+                                <div class="server-input-group">
+                                    <label for="mp-server-input">Server Address:</label>
+                                    <input type="text" id="mp-server-input" placeholder="ws://localhost:8080" />
+                                </div>
+
+                                <div class="connection-buttons">
+                                    <button id="mp-connect-btn" class="btn-primary">Connect</button>
+                                    <button id="mp-disconnect-btn" class="btn-secondary" disabled>Disconnect</button>
+                                </div>
+
+                                <div class="auto-connect-option">
+                                    <label>
+                                        <input type="checkbox" id="mp-auto-connect" />
+                                        Auto-connect on game start
+                                    </label>
+                                </div>
+
+                                <div id="mp-error" class="mp-error hidden"></div>
+                            </div>
+
+                            <div class="server-instructions">
+                                <h4>How to start a server:</h4>
+                                <ol>
+                                    <li>Open a terminal in the <code>server/</code> folder</li>
+                                    <li>Run: <code>npm install</code> (first time only)</li>
+                                    <li>Run: <code>npm start</code></li>
+                                    <li>Share the server address with players on your network!</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <!-- Leaderboard Section -->
+                        <div class="mp-section leaderboard-section">
+                            <div id="mp-leaderboard">
+                                <p class="hint">Connect to a server to see the leaderboard!</p>
+                            </div>
+                        </div>
+
+                        <!-- Chat Section -->
+                        <div class="mp-section chat-section">
+                            <h4>💬 Chat</h4>
+                            <div id="mp-chat-messages" class="chat-messages">
+                                <p class="hint">Connect to start chatting!</p>
+                            </div>
+                            <div class="chat-input-group">
+                                <input type="text" id="mp-chat-input" placeholder="Type a message..." maxlength="200" />
+                                <button id="mp-chat-send" class="btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
 
@@ -221,16 +263,124 @@
 
         <!-- Item tooltip -->
         <div id="item-tooltip" class="tooltip hidden"></div>
+
+        <!-- Boss Battle Screen -->
+        <div id="boss-battle-screen" class="hidden">
+            <div class="battle-arena">
+                <!-- Terrain indicator -->
+                <div id="battle-terrain" class="terrain-indicator">
+                    <span id="terrain-name">Normal Arena</span>
+                    <span id="terrain-turns"></span>
+                </div>
+
+                <!-- Boss panel -->
+                <div class="boss-battle-panel">
+                    <div class="boss-info-card">
+                        <div class="boss-header">
+                            <span id="boss-battle-icon" class="battle-icon"></span>
+                            <div class="boss-title">
+                                <h2 id="boss-battle-name">Boss Name</h2>
+                                <div id="boss-battle-types" class="type-badges"></div>
+                            </div>
+                            <span id="boss-battle-level" class="level-badge">Lv. 1</span>
+                        </div>
+                        <div class="hp-bar-container">
+                            <div class="hp-bar boss-hp">
+                                <div id="boss-battle-hp-fill" class="hp-fill"></div>
+                                <span id="boss-battle-hp-text" class="hp-text">1000/1000</span>
+                            </div>
+                        </div>
+                        <div class="battle-stats">
+                            <div class="stat-display">
+                                <span class="stat-label">Chaos:</span>
+                                <div class="chaos-bar">
+                                    <div id="boss-chaos-fill" class="bar-fill chaos"></div>
+                                    <span id="boss-chaos-text">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-label">Corruption:</span>
+                                <div class="corruption-bar">
+                                    <div id="boss-corruption-fill" class="bar-fill corruption"></div>
+                                    <span id="boss-corruption-text">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Battle log center -->
+                <div class="battle-log-center">
+                    <div id="battle-messages"></div>
+                    <div class="battle-indicators">
+                        <div id="battle-combo" class="indicator hidden">Combo x<span id="combo-count">0</span></div>
+                        <div id="battle-resonance" class="indicator hidden">Resonance Active!</div>
+                    </div>
+                </div>
+
+                <!-- Player panel -->
+                <div class="player-battle-panel">
+                    <div class="player-info-card">
+                        <div class="player-header">
+                            <span id="player-battle-level" class="level-badge">Lv. 1</span>
+                            <div class="player-title">
+                                <h2 id="player-battle-name">Player Name</h2>
+                                <div id="player-battle-types" class="type-badges"></div>
+                            </div>
+                        </div>
+                        <div class="hp-bar-container">
+                            <div class="hp-bar player-hp">
+                                <div id="player-battle-hp-fill" class="hp-fill"></div>
+                                <span id="player-battle-hp-text" class="hp-text">100/100</span>
+                            </div>
+                        </div>
+                        <div class="battle-stats">
+                            <div class="stat-display">
+                                <span class="stat-label">Chaos:</span>
+                                <div class="chaos-bar">
+                                    <div id="player-chaos-fill" class="bar-fill chaos"></div>
+                                    <span id="player-chaos-text">0</span>
+                                </div>
+                            </div>
+                            <div class="stat-display">
+                                <span class="stat-label">Corruption:</span>
+                                <div class="corruption-bar">
+                                    <div id="player-corruption-fill" class="bar-fill corruption"></div>
+                                    <span id="player-corruption-text">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Move selection -->
+                    <div class="move-selection">
+                        <h3>Select Move</h3>
+                        <div id="battle-moves" class="battle-moves-grid"></div>
+                        <button id="flee-battle-btn" class="flee-btn">Flee Battle</button>
+                    </div>
+                </div>
+
+                <!-- Turn counter -->
+                <div class="turn-counter">
+                    Turn <span id="battle-turn">1</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts (modular) - load order matters -->
+    <script src="js/icons.js"></script>
     <script src="js/character.js"></script>
     <script src="js/skills.js"></script>
     <script src="js/inventory.js"></script>
     <script src="js/world.js"></script>
     <script src="js/combat.js"></script>
+    <script src="js/boss-combat.js"></script>
+    <script src="js/boss-battle-ui.js"></script>
     <script src="js/quests.js"></script>
     <script src="js/talents.js"></script>
+    <script src="js/multiplayer.js"></script>
+    <script src="js/multiplayer-ui.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/save.js"></script>
     <script src="js/main.js"></script>
