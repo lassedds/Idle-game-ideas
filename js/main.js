@@ -22,6 +22,32 @@ const Game = (function() {
     function init() {
         console.log('Idle Legends initializing...');
 
+        // Initialize new systems first
+        if (typeof Corruption !== 'undefined') {
+            Corruption.init();
+            console.log('[Game] Corruption system initialized');
+        }
+        if (typeof EquipmentGenetics !== 'undefined') {
+            EquipmentGenetics.init();
+            console.log('[Game] Equipment Genetics initialized');
+        }
+        if (typeof ZoneFatigue !== 'undefined') {
+            ZoneFatigue.init();
+            console.log('[Game] Zone Fatigue initialized');
+        }
+        if (typeof SkillFusion !== 'undefined') {
+            SkillFusion.init();
+            console.log('[Game] Skill Fusion initialized');
+        }
+        if (typeof Reincarnation !== 'undefined') {
+            Reincarnation.init();
+            console.log('[Game] Reincarnation initialized');
+        }
+        if (typeof ClassEvolution !== 'undefined') {
+            ClassEvolution.init();
+            console.log('[Game] Class Evolution initialized');
+        }
+
         // Initialize UI
         UI.init();
 
@@ -29,6 +55,28 @@ const Game = (function() {
         if (typeof Multiplayer !== 'undefined') {
             Multiplayer.init();
             MultiplayerUI.init();
+        }
+
+        // Register modules with StateManager
+        if (typeof StateManager !== 'undefined') {
+            StateManager.registerModule('Character', Character);
+            StateManager.registerModule('Skills', Skills);
+            StateManager.registerModule('Inventory', Inventory);
+            StateManager.registerModule('World', World);
+            StateManager.registerModule('Combat', Combat);
+            StateManager.registerModule('BossCombat', BossCombat);
+            StateManager.registerModule('Quests', Quests);
+            StateManager.registerModule('Talents', Talents);
+
+            // Register new systems
+            if (typeof Corruption !== 'undefined') StateManager.registerModule('Corruption', Corruption);
+            if (typeof EquipmentGenetics !== 'undefined') StateManager.registerModule('EquipmentGenetics', EquipmentGenetics);
+            if (typeof ZoneFatigue !== 'undefined') StateManager.registerModule('ZoneFatigue', ZoneFatigue);
+            if (typeof SkillFusion !== 'undefined') StateManager.registerModule('SkillFusion', SkillFusion);
+            if (typeof Reincarnation !== 'undefined') StateManager.registerModule('Reincarnation', Reincarnation);
+            if (typeof ClassEvolution !== 'undefined') StateManager.registerModule('ClassEvolution', ClassEvolution);
+
+            console.log('[Game] Registered modules with StateManager');
         }
 
         // Try to load saved game
@@ -288,6 +336,7 @@ const Game = (function() {
             UI.updateCharacterInfo();
             UI.updateGold();
             UI.renderInventory();
+            UI.updateNewSystems(); // Update corruption, class, etc.
 
             // Check for zone unlocks based on highest character level
             const chars = Character.getAll();

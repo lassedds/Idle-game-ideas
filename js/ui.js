@@ -1297,6 +1297,86 @@ const UI = (function() {
         return Math.floor(num).toString();
     }
 
+    /**
+     * Update corruption display
+     */
+    function updateCorruptionDisplay() {
+        if (typeof Corruption === 'undefined') return;
+
+        const corruptionFill = document.getElementById('corruption-fill');
+        const corruptionText = document.getElementById('corruption-text');
+        const corruptionStatus = document.getElementById('corruption-status');
+        const corruptionEffects = document.getElementById('corruption-effects');
+
+        if (!corruptionFill || !corruptionText || !corruptionStatus || !corruptionEffects) return;
+
+        const level = Corruption.getCorruptionLevel();
+        const effects = Corruption.getEffects();
+        const displayText = Corruption.getDisplayText();
+        const color = Corruption.getCorruptionColor();
+
+        corruptionFill.style.width = `${level}%`;
+        corruptionFill.style.background = color;
+        corruptionText.textContent = `${Math.floor(level)}%`;
+        corruptionStatus.textContent = displayText;
+        corruptionStatus.style.color = color;
+
+        // Update effects display
+        if (effects.damageBonus > 1 || effects.goldBonus > 1) {
+            let html = '<div class="corruption-bonuses">';
+            if (effects.damageBonus > 1) {
+                html += `<div>+${Math.round((effects.damageBonus - 1) * 100)}% Damage</div>`;
+            }
+            if (effects.goldBonus > 1) {
+                html += `<div>+${Math.round((effects.goldBonus - 1) * 100)}% Gold</div>`;
+            }
+            if (effects.tradeBlocked) {
+                html += `<div style="color: #f44336;">✗ Cannot trade</div>`;
+            }
+            if (effects.cannotEnterTowns) {
+                html += `<div style="color: #f44336;">✗ Cannot enter towns</div>`;
+            }
+            if (effects.transformedToBoss) {
+                html += `<div style="color: #9c27b0; font-weight: bold;">👹 BOSS FORM</div>`;
+            }
+            html += '</div>';
+            corruptionEffects.innerHTML = html;
+        } else {
+            corruptionEffects.innerHTML = '<p class="hint">No corruption effects</p>';
+        }
+    }
+
+    /**
+     * Update class display
+     */
+    function updateClassDisplay() {
+        if (typeof ClassEvolution === 'undefined') return;
+
+        const currentClassEl = document.getElementById('current-class');
+        const classTierEl = document.getElementById('class-tier');
+        const evolutionFillEl = document.getElementById('evolution-progress-fill');
+        const evolutionTextEl = document.getElementById('evolution-progress-text');
+
+        if (!currentClassEl || !classTierEl || !evolutionFillEl || !evolutionTextEl) return;
+
+        const className = ClassEvolution.getCurrentClass();
+        const classData = ClassEvolution.getCurrentClassData();
+        const progress = ClassEvolution.getEvolutionProgress();
+
+        currentClassEl.textContent = className;
+        classTierEl.textContent = classData?.tier || 0;
+        evolutionFillEl.style.width = `${progress}%`;
+        evolutionTextEl.textContent = `${progress}%`;
+    }
+
+    /**
+     * Update all new system displays
+     */
+    function updateNewSystems() {
+        updateCorruptionDisplay();
+        updateClassDisplay();
+    }
+
     // Public API
     return {
         init,
@@ -1318,6 +1398,9 @@ const UI = (function() {
         showZoneActivities,
         updateActivityDisplay,
         hideActivityDisplay,
-        formatNumber
+        formatNumber,
+        updateNewSystems,
+        updateCorruptionDisplay,
+        updateClassDisplay
     };
 })();

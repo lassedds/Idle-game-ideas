@@ -226,6 +226,17 @@ const Combat = (function() {
         // Check for zone unlocks based on new level
         const newUnlocks = World.checkUnlocks(char.level);
 
+        // Track zone fatigue (monster kill)
+        if (typeof ZoneFatigue !== 'undefined' && state.zoneId) {
+            ZoneFatigue.increaseFatigue(state.zoneId, 1, false);
+        }
+
+        // Track class evolution
+        if (typeof ClassEvolution !== 'undefined') {
+            ClassEvolution.trackAction('damage_dealt', { amount: monster.exp, type: 'physical' });
+            ClassEvolution.trackAction('monster_killed', { levelDifference: monster.level - char.level });
+        }
+
         return {
             exp: monster.exp,
             gold: monster.gold,

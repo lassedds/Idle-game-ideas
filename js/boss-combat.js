@@ -891,12 +891,31 @@ const BossCombat = (function() {
                     result.drops.push({ itemId: drop.itemId, quantity: drop.quantity });
                 }
             });
+
+            // Track zone fatigue (boss kill)
+            if (typeof ZoneFatigue !== 'undefined' && currentBattle.zoneId) {
+                ZoneFatigue.increaseFatigue(currentBattle.zoneId, 0, true);
+            }
+
+            // Track class evolution (boss kill)
+            if (typeof ClassEvolution !== 'undefined') {
+                ClassEvolution.trackAction('damage_dealt', { amount: 1000, type: boss.types[0] });
+            }
         } else {
             // Player defeated - maybe lose some gold or items
             const goldLost = Math.floor(Inventory.getGold() * 0.1);
             if (goldLost > 0) {
                 Inventory.removeGold(goldLost);
                 result.goldLost = goldLost;
+            }
+        }
+
+        // Apply corruption from battle
+        if (typeof Corruption !== 'undefined' && currentBattle.corruption) {
+            const corruptionGain = currentBattle.corruption.player;
+            if (corruptionGain > 0) {
+                Corruption.increaseCorruption(corruptionGain);
+                result.corruptionGained = corruptionGain;
             }
         }
 
