@@ -165,17 +165,38 @@ const Multiplayer = (function() {
 
         const stats = Character.getCombatStats();
 
+        // Gather data from all new systems
+        const playerData = {
+            playerId: playerId,
+            name: character.name,
+            level: character.level,
+            class: character.class,
+            totalExp: character.totalExp || 0,
+            gold: Inventory.getGold(),
+            combatPower: stats.power || 0
+        };
+
+        // Add corruption data
+        if (typeof Corruption !== 'undefined') {
+            playerData.corruption = Corruption.getCorruptionLevel();
+            playerData.corruptionTier = Corruption.getCorruptionTier();
+            playerData.isTransformed = Corruption.isTransformed();
+        }
+
+        // Add class evolution data
+        if (typeof ClassEvolution !== 'undefined') {
+            playerData.class = ClassEvolution.getCurrentClass();
+        }
+
+        // Add reincarnation data
+        if (typeof Reincarnation !== 'undefined') {
+            playerData.soulEssence = Reincarnation.getSoulEssence();
+            playerData.generation = Reincarnation.getCurrentGeneration();
+        }
+
         send({
             type: 'register',
-            data: {
-                playerId: playerId,
-                name: character.name,
-                level: character.level,
-                class: character.class,
-                totalExp: character.totalExp || 0,
-                gold: Inventory.getGold(),
-                combatPower: stats.power || 0
-            }
+            data: playerData
         });
     }
 
@@ -190,14 +211,34 @@ const Multiplayer = (function() {
 
         const stats = Character.getCombatStats();
 
+        const updateData = {
+            level: char.level,
+            totalExp: char.totalExp || 0,
+            gold: Inventory.getGold(),
+            combatPower: stats.power || 0
+        };
+
+        // Add corruption data
+        if (typeof Corruption !== 'undefined') {
+            updateData.corruption = Corruption.getCorruptionLevel();
+            updateData.corruptionTier = Corruption.getCorruptionTier();
+            updateData.isTransformed = Corruption.isTransformed();
+        }
+
+        // Add class evolution data
+        if (typeof ClassEvolution !== 'undefined') {
+            updateData.class = ClassEvolution.getCurrentClass();
+        }
+
+        // Add reincarnation data
+        if (typeof Reincarnation !== 'undefined') {
+            updateData.soulEssence = Reincarnation.getSoulEssence();
+            updateData.generation = Reincarnation.getCurrentGeneration();
+        }
+
         send({
             type: 'update',
-            data: {
-                level: char.level,
-                totalExp: char.totalExp || 0,
-                gold: Inventory.getGold(),
-                combatPower: stats.power || 0
-            }
+            data: updateData
         });
     }
 
@@ -354,6 +395,7 @@ const Multiplayer = (function() {
         connect,
         disconnect,
         sendChat,
+        sendPlayerUpdate,
         requestLeaderboard,
         isConnected,
         getLeaderboard,
