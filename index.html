@@ -68,6 +68,37 @@
                         <div>🛡️ Defense: <span id="defense">0</span></div>
                     </div>
                 </div>
+
+                <div id="class-panel" class="panel hidden">
+                    <h3>⚡ Class</h3>
+                    <div id="class-info">
+                        <div class="class-name"><span id="current-class">Wanderer</span></div>
+                        <div class="class-tier">Tier <span id="class-tier">0</span></div>
+                        <div class="evolution-progress">
+                            <div class="progress-label">Evolution Progress</div>
+                            <div class="progress-bar">
+                                <div id="evolution-progress-fill" class="progress-fill" style="width: 0%"></div>
+                                <span id="evolution-progress-text">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="corruption-panel" class="panel hidden">
+                    <h3>☠️ Corruption</h3>
+                    <div id="corruption-info">
+                        <div class="corruption-display">
+                            <div class="corruption-bar">
+                                <div id="corruption-fill" class="corruption-bar-fill" style="width: 0%"></div>
+                                <span id="corruption-text">0%</span>
+                            </div>
+                            <div class="corruption-status" id="corruption-status">Pure</div>
+                        </div>
+                        <div class="corruption-effects" id="corruption-effects">
+                            <p class="hint">No corruption effects</p>
+                        </div>
+                    </div>
+                </div>
             </aside>
 
             <!-- Center - Main activity area -->
@@ -80,6 +111,9 @@
                     <button class="main-tab" data-tab="shop">🏪 Shop</button>
                     <button class="main-tab" data-tab="quests">📜 Quests</button>
                     <button class="main-tab" data-tab="talents">✨ Talents</button>
+                    <button class="main-tab" data-tab="fusion">🔮 Fusion</button>
+                    <button class="main-tab" data-tab="genetics">🧬 Genetics</button>
+                    <button class="main-tab" data-tab="reincarnation">✨ Soul Tree</button>
                     <button class="main-tab" data-tab="multiplayer">🌐 Multiplayer</button>
                 </div>
 
@@ -199,6 +233,160 @@
                             <div class="chat-input-group">
                                 <input type="text" id="mp-chat-input" placeholder="Type a message..." maxlength="200" />
                                 <button id="mp-chat-send" class="btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skill Fusion tab -->
+                <div id="fusion-tab" class="main-content">
+                    <div class="fusion-container">
+                        <h2>🔮 Skill Fusion</h2>
+                        <p class="hint">Combine two skills to create powerful hybrid abilities!</p>
+
+                        <div class="fusion-resources">
+                            <div class="resource-display">
+                                <span>✨ Fusion Essence:</span>
+                                <span id="fusion-essence-display">0</span>
+                            </div>
+                            <div class="resource-display">
+                                <span>🎯 Active Fusions:</span>
+                                <span id="active-fusions-count">0/3</span>
+                            </div>
+                        </div>
+
+                        <div class="fusion-sections">
+                            <div class="fusion-section">
+                                <h3>Create Fusion</h3>
+                                <div id="fusion-creation">
+                                    <p class="hint">Select two skills to fuse them together.</p>
+                                    <div class="fusion-selection">
+                                        <select id="fusion-skill1">
+                                            <option value="">Select Skill 1...</option>
+                                        </select>
+                                        <span class="fusion-plus">+</span>
+                                        <select id="fusion-skill2">
+                                            <option value="">Select Skill 2...</option>
+                                        </select>
+                                    </div>
+                                    <button id="create-fusion-btn" class="btn-primary">Fuse Skills (50 Essence)</button>
+                                </div>
+                            </div>
+
+                            <div class="fusion-section">
+                                <h3>Your Fusions</h3>
+                                <div id="fusion-list"></div>
+                            </div>
+
+                            <div class="fusion-section">
+                                <h3>Active Fusions</h3>
+                                <div id="active-fusion-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipment Genetics tab -->
+                <div id="genetics-tab" class="main-content">
+                    <div class="genetics-container">
+                        <h2>🧬 Equipment Genetics</h2>
+                        <p class="hint">Breed equipment to create offspring with inherited traits and mutations!</p>
+
+                        <div class="genetics-resources">
+                            <div class="resource-display">
+                                <span>🧪 Fusion Catalysts:</span>
+                                <span id="fusion-catalysts-display">0</span>
+                            </div>
+                        </div>
+
+                        <div class="genetics-sections">
+                            <div class="genetics-section">
+                                <h3>Fusion Altar</h3>
+                                <div id="breeding-interface">
+                                    <p class="hint">Select two equipment items of the same type to breed them.</p>
+                                    <div class="breeding-selection">
+                                        <select id="breed-parent1">
+                                            <option value="">Select Parent 1...</option>
+                                        </select>
+                                        <span class="breed-plus">×</span>
+                                        <select id="breed-parent2">
+                                            <option value="">Select Parent 2...</option>
+                                        </select>
+                                    </div>
+                                    <button id="breed-equipment-btn" class="btn-primary">Breed Equipment (1 Catalyst)</button>
+                                    <div id="breeding-result"></div>
+                                </div>
+                            </div>
+
+                            <div class="genetics-section">
+                                <h3>Equipment Library</h3>
+                                <div id="genetics-library">
+                                    <p class="hint">Your equipment collection with genetic information.</p>
+                                </div>
+                            </div>
+
+                            <div class="genetics-section">
+                                <h3>Breeding History</h3>
+                                <div id="breeding-history"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reincarnation/Soul Tree tab -->
+                <div id="reincarnation-tab" class="main-content">
+                    <div class="reincarnation-container">
+                        <h2>✨ Soul Tree</h2>
+                        <p class="hint">Reincarnate to gain Soul Essence and unlock permanent upgrades!</p>
+
+                        <div class="reincarnation-status">
+                            <div class="soul-essence-display">
+                                <span>💫 Soul Essence:</span>
+                                <span id="soul-essence-display">0</span>
+                            </div>
+                            <div class="generation-display">
+                                <span>🔄 Generation:</span>
+                                <span id="generation-display">1</span>
+                            </div>
+                            <div class="reincarnation-count-display">
+                                <span>♻️ Reincarnations:</span>
+                                <span id="reincarnation-count-display">0</span>
+                            </div>
+                        </div>
+
+                        <div class="reincarnation-sections">
+                            <div class="reincarnation-section">
+                                <h3>Reincarnate</h3>
+                                <div id="reincarnation-info">
+                                    <p>Reset your character to level 1, losing all equipment and gold, but gain Soul Essence to unlock permanent upgrades!</p>
+                                    <div class="reincarnation-preview">
+                                        <div>Minimum Level: <span id="min-reincarnation-level">50</span></div>
+                                        <div>Soul Essence Gained: <span id="reincarnation-essence-preview">0</span></div>
+                                    </div>
+                                    <button id="reincarnate-btn" class="btn-warning" disabled>Reincarnate</button>
+                                </div>
+                            </div>
+
+                            <div class="reincarnation-section">
+                                <h3>Soul Tree</h3>
+                                <div id="soul-tree">
+                                    <div class="soul-tree-category">
+                                        <h4>Rebirth Boons</h4>
+                                        <div id="soul-tree-rebirth-boons" class="soul-tree-nodes"></div>
+                                    </div>
+                                    <div class="soul-tree-category">
+                                        <h4>Power Growth</h4>
+                                        <div id="soul-tree-power-growth" class="soul-tree-nodes"></div>
+                                    </div>
+                                    <div class="soul-tree-category">
+                                        <h4>Soul Abilities</h4>
+                                        <div id="soul-tree-soul-abilities" class="soul-tree-nodes"></div>
+                                    </div>
+                                    <div class="soul-tree-category">
+                                        <h4>Cycle Mastery</h4>
+                                        <div id="soul-tree-cycle-mastery" class="soul-tree-nodes"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -369,6 +557,12 @@
     </div>
 
     <!-- Scripts (modular) - load order matters -->
+    <!-- Core utilities (must load first) -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/state-manager.js"></script>
+
+    <!-- Game modules -->
     <script src="js/icons.js"></script>
     <script src="js/character.js"></script>
     <script src="js/skills.js"></script>
@@ -379,6 +573,15 @@
     <script src="js/boss-battle-ui.js"></script>
     <script src="js/quests.js"></script>
     <script src="js/talents.js"></script>
+
+    <!-- New Systems -->
+    <script src="js/corruption.js"></script>
+    <script src="js/equipment-genetics.js"></script>
+    <script src="js/zone-fatigue.js"></script>
+    <script src="js/skill-fusion.js"></script>
+    <script src="js/reincarnation.js"></script>
+    <script src="js/class-evolution.js"></script>
+
     <script src="js/multiplayer.js"></script>
     <script src="js/multiplayer-ui.js"></script>
     <script src="js/ui.js"></script>

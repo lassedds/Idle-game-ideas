@@ -130,13 +130,43 @@ const MultiplayerUI = (function() {
                     const isMe = player.id === myPlayerId;
                     const rankIcon = player.rank === 1 ? '🥇' : player.rank === 2 ? '🥈' : player.rank === 3 ? '🥉' : `#${player.rank}`;
 
+                    // Build class display with generation
+                    let classDisplay = player.class || 'Wanderer';
+                    if (player.generation && player.generation > 1) {
+                        classDisplay += ` G${player.generation}`;
+                    }
+
+                    // Add corruption indicator if corrupted
+                    let corruptionBadge = '';
+                    if (player.corruption && player.corruption > 0) {
+                        const corruptionTier = player.corruptionTier || 'NONE';
+                        const colors = {
+                            'LOW': '#ffeb3b',
+                            'MEDIUM': '#ff9800',
+                            'HIGH': '#f44336',
+                            'TRANSFORMED': '#9c27b0'
+                        };
+                        const color = colors[corruptionTier] || '#4caf50';
+                        if (player.isTransformed) {
+                            corruptionBadge = `<span style="color: ${color}; font-weight: bold;">👹 BOSS</span>`;
+                        } else if (player.corruption >= 25) {
+                            corruptionBadge = `<span style="color: ${color};">☠️ ${Math.floor(player.corruption)}%</span>`;
+                        }
+                    }
+
+                    // Add soul essence badge if present
+                    let soulBadge = '';
+                    if (player.soulEssence && player.soulEssence > 0) {
+                        soulBadge = `<span class="soul-badge" title="Soul Essence">✨${formatNumber(player.soulEssence)}</span>`;
+                    }
+
                     return `
-                        <div class="leaderboard-entry ${isMe ? 'is-me' : ''}">
+                        <div class="leaderboard-entry ${isMe ? 'is-me' : ''} ${player.isTransformed ? 'transformed' : ''}">
                             <span class="rank">${rankIcon}</span>
                             <div class="player-info">
-                                <div class="player-name">${player.name}${isMe ? ' (You)' : ''}</div>
+                                <div class="player-name">${player.name}${isMe ? ' (You)' : ''} ${soulBadge}</div>
                                 <div class="player-details">
-                                    Lv.${player.level} ${player.class} • ⚔️${player.combatPower}
+                                    Lv.${player.level} ${classDisplay} • ⚔️${player.combatPower} ${corruptionBadge}
                                 </div>
                             </div>
                             <div class="player-stats">
