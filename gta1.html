@@ -105,7 +105,10 @@
             wantedTimer: 0,
             currentMission: 0,
             missionActive: false,
-            missionTarget: null
+            missionTarget: null,
+            policeCount: 0,
+            policeSpawnTimer: 0,
+            roadblocks: []
         };
 
         // Player
@@ -252,15 +255,100 @@
                 height: type.height,
                 angle: Math.random() * Math.PI * 2,
                 speed: 0,
-                maxSpeed: type.maxSpeed,
+                maxSpeed: type.maxSpeed + 1, // Police are faster
                 acceleration: type.acceleration,
                 color: type.color,
                 name: type.name,
                 occupied: false,
                 isPolice: true,
-                targetX: player.x,
-                targetY: player.y
+                shootTimer: 0,
+                ramming: false
             });
+            game.policeCount++;
+        }
+
+        function spawnRoadblock() {
+            const road = roads[Math.floor(Math.random() * roads.length)];
+            const type = vehicleTypes[4];
+
+            const blockX = road.x + Math.random() * (road.vertical ? road.width : road.width - 200);
+            const blockY = road.y + Math.random() * (road.vertical ? road.height - 200 : road.height);
+
+            // Spawn 3 police cars in a roadblock formation
+            for (let i = 0; i < 3; i++) {
+                vehicles.push({
+                    x: blockX + (i * 40) - 40,
+                    y: blockY,
+                    width: type.width,
+                    height: type.height,
+                    angle: road.vertical ? 0 : Math.PI / 2,
+                    speed: 0,
+                    maxSpeed: type.maxSpeed,
+                    acceleration: type.acceleration,
+                    color: type.color,
+                    name: type.name,
+                    occupied: false,
+                    isPolice: true,
+                    isRoadblock: true,
+                    shootTimer: 0
+                });
+            }
+
+            game.roadblocks.push({ x: blockX, y: blockY, time: 600 });
+        }
+
+        // Collision Detection Functions
+        function checkAABB(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 < x2 + w2 &&
+                   x1 + w1 > x2 &&
+                   y1 < y2 + h2 &&
+                   y1 + h1 > y2;
+        }
+
+        function checkBuildingCollision(x, y, width, height) {
+            for (let building of buildings) {
+                if (checkAABB(x - width/2, y - height/2, width, height,
+                             building.x, building.y, building.width, building.height)) {
+                    return building;
+                }
+            }
+            return null;
+        }
+
+        function resolveCollision(obj1, obj2, isVehicle1 = false, isVehicle2 = false) {
+            const dx = obj2.x - obj1.x;
+            const dy = obj2.y - obj1.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist === 0) return;
+
+            const overlap = ((obj1.width + obj2.width) / 2) - dist;
+
+            if (overlap > 0) {
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                // Push objects apart
+                obj1.x -= nx * overlap * 0.5;
+                obj1.y -= ny * overlap * 0.5;
+                obj2.x += nx * overlap * 0.5;
+                obj2.y += ny * overlap * 0.5;
+
+                // Bounce effect for vehicles
+                if (isVehicle1 && obj1.speed) {
+                    obj1.speed *= -0.5;
+                }
+                if (isVehicle2 && obj2.speed) {
+                    obj2.speed *= -0.5;
+                }
+
+                // Damage from high speed collisions
+                if (isVehicle1 && Math.abs(obj1.speed) > 5) {
+                    if (obj1 === player.vehicle) {
+                        player.health -= Math.abs(obj1.speed) * 0.5;
+                    }
+                }
+            }
         }
 
         // Missions
@@ -378,9 +466,15 @@
             game.wantedLevel = Math.min(5, game.wantedLevel + amount);
             game.wantedTimer = 300; // 5 seconds before decrease
 
-            // Spawn police if wanted level increases
-            if (game.wantedLevel >= 2 && Math.random() < 0.3) {
+            // Spawn police based on wanted level
+            const maxPolice = Math.floor(game.wantedLevel) * 3;
+            if (game.policeCount < maxPolice && Math.random() < 0.2) {
                 spawnPolice();
+            }
+
+            // Spawn roadblocks at high wanted levels
+            if (game.wantedLevel >= 4 && game.roadblocks.length < 2 && Math.random() < 0.05) {
+                spawnRoadblock();
             }
         }
 
@@ -405,8 +499,20 @@
                     vehicle.angle += player.turnSpeed * (vehicle.speed / vehicle.maxSpeed);
                 }
 
+                const oldX = vehicle.x;
+                const oldY = vehicle.y;
+
                 vehicle.x += Math.cos(vehicle.angle) * vehicle.speed;
                 vehicle.y += Math.sin(vehicle.angle) * vehicle.speed;
+
+                // Check building collision
+                const buildingHit = checkBuildingCollision(vehicle.x, vehicle.y, vehicle.width, vehicle.height);
+                if (buildingHit) {
+                    vehicle.x = oldX;
+                    vehicle.y = oldY;
+                    vehicle.speed *= -0.3;
+                    player.health -= Math.abs(vehicle.speed) * 2;
+                }
 
                 player.x = vehicle.x;
                 player.y = vehicle.y;
@@ -434,8 +540,19 @@
                     player.angle += player.turnSpeed;
                 }
 
+                const oldX = player.x;
+                const oldY = player.y;
+
                 player.x += Math.cos(player.angle) * player.speed;
                 player.y += Math.sin(player.angle) * player.speed;
+
+                // Check building collision for player
+                const buildingHit = checkBuildingCollision(player.x, player.y, player.width, player.height);
+                if (buildingHit) {
+                    player.x = oldX;
+                    player.y = oldY;
+                    player.speed = 0;
+                }
 
                 // Shooting
                 if (keys[' '] && Math.random() < 0.1) {
@@ -452,36 +569,100 @@
             game.camera.y = player.y - canvas.height / 2;
 
             // Update vehicles
-            for (let vehicle of vehicles) {
+            for (let i = 0; i < vehicles.length; i++) {
+                const vehicle = vehicles[i];
                 if (vehicle.occupied) continue;
 
+                const oldVX = vehicle.x;
+                const oldVY = vehicle.y;
+
                 if (vehicle.isPolice && game.wantedLevel > 0) {
-                    // Police AI - chase player
+                    // Police AI - aggressive chase
                     const dx = player.x - vehicle.x;
                     const dy = player.y - vehicle.y;
                     const dist = Math.sqrt(dx*dx + dy*dy);
 
-                    if (dist > 10) {
-                        const targetAngle = Math.atan2(dy, dx);
-                        let angleDiff = targetAngle - vehicle.angle;
-                        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-                        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+                    if (!vehicle.isRoadblock) {
+                        if (dist > 10) {
+                            const targetAngle = Math.atan2(dy, dx);
+                            let angleDiff = targetAngle - vehicle.angle;
+                            while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+                            while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-                        vehicle.angle += Math.sign(angleDiff) * 0.05;
-                        vehicle.speed = Math.min(vehicle.maxSpeed, vehicle.speed + vehicle.acceleration);
+                            // Better turning
+                            vehicle.angle += Math.sign(angleDiff) * Math.min(0.08, Math.abs(angleDiff) * 0.3);
+                            vehicle.speed = Math.min(vehicle.maxSpeed, vehicle.speed + vehicle.acceleration * 1.5);
 
-                        vehicle.x += Math.cos(vehicle.angle) * vehicle.speed;
-                        vehicle.y += Math.sin(vehicle.angle) * vehicle.speed;
+                            vehicle.x += Math.cos(vehicle.angle) * vehicle.speed;
+                            vehicle.y += Math.sin(vehicle.angle) * vehicle.speed;
 
-                        // Police collision with player
-                        if (dist < 30) {
-                            player.health -= 0.5;
+                            // Check building collision
+                            const buildingHit = checkBuildingCollision(vehicle.x, vehicle.y, vehicle.width, vehicle.height);
+                            if (buildingHit) {
+                                vehicle.x = oldVX;
+                                vehicle.y = oldVY;
+                                vehicle.speed *= -0.5;
+                            }
+
+                            // Police ramming
+                            if (dist < 40) {
+                                player.health -= Math.abs(vehicle.speed) * 0.3;
+                                vehicle.ramming = true;
+                            }
+
+                            // Police shooting
+                            if (dist < 200 && dist > 50) {
+                                vehicle.shootTimer--;
+                                if (vehicle.shootTimer <= 0) {
+                                    vehicle.shootTimer = 60; // Shoot every second
+                                    const angleToPlayer = Math.atan2(dy, dx);
+                                    bullets.push({
+                                        x: vehicle.x,
+                                        y: vehicle.y,
+                                        angle: angleToPlayer + (Math.random() - 0.5) * 0.3,
+                                        speed: 10,
+                                        damage: 10,
+                                        life: 50,
+                                        fromPolice: true
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        // Roadblock police - shoot from stationary position
+                        const dx = player.x - vehicle.x;
+                        const dy = player.y - vehicle.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+
+                        if (dist < 300) {
+                            vehicle.shootTimer--;
+                            if (vehicle.shootTimer <= 0) {
+                                vehicle.shootTimer = 40;
+                                const angleToPlayer = Math.atan2(dy, dx);
+                                bullets.push({
+                                    x: vehicle.x,
+                                    y: vehicle.y,
+                                    angle: angleToPlayer + (Math.random() - 0.5) * 0.2,
+                                    speed: 10,
+                                    damage: 10,
+                                    life: 50,
+                                    fromPolice: true
+                                });
+                            }
                         }
                     }
                 } else {
                     // Regular traffic AI
                     vehicle.x += Math.cos(vehicle.angle) * vehicle.aiSpeed;
                     vehicle.y += Math.sin(vehicle.angle) * vehicle.aiSpeed;
+
+                    // Check building collision for traffic
+                    const buildingHit = checkBuildingCollision(vehicle.x, vehicle.y, vehicle.width, vehicle.height);
+                    if (buildingHit) {
+                        vehicle.x = oldVX;
+                        vehicle.y = oldVY;
+                        vehicle.angle += Math.PI / 2;
+                    }
 
                     // Random direction changes
                     if (Math.random() < 0.02) {
@@ -491,6 +672,21 @@
                     // Keep in bounds
                     if (vehicle.x < 0 || vehicle.x > MAP_SIZE || vehicle.y < 0 || vehicle.y > MAP_SIZE) {
                         vehicle.angle += Math.PI;
+                    }
+                }
+            }
+
+            // Vehicle-to-vehicle collision detection
+            for (let i = 0; i < vehicles.length; i++) {
+                for (let j = i + 1; j < vehicles.length; j++) {
+                    const v1 = vehicles[i];
+                    const v2 = vehicles[j];
+                    const dx = v2.x - v1.x;
+                    const dy = v2.y - v1.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < (v1.width + v2.width) / 2) {
+                        resolveCollision(v1, v2, true, true);
                     }
                 }
             }
@@ -535,22 +731,45 @@
                 bullet.y += Math.sin(bullet.angle) * bullet.speed;
                 bullet.life--;
 
-                // Check pedestrian hits
-                for (let ped of pedestrians) {
-                    if (ped.dead) continue;
-                    const dx = bullet.x - ped.x;
-                    const dy = bullet.y - ped.y;
-                    if (Math.sqrt(dx*dx + dy*dy) < 10) {
-                        ped.dead = true;
+                // Police bullets hit player
+                if (bullet.fromPolice) {
+                    const dx = bullet.x - player.x;
+                    const dy = bullet.y - player.y;
+                    if (Math.sqrt(dx*dx + dy*dy) < 15) {
+                        player.health -= bullet.damage;
                         bullets.splice(i, 1);
-                        increaseWantedLevel(1);
-                        game.money += 50;
+                        continue;
+                    }
+                } else {
+                    // Player bullets hit pedestrians
+                    for (let ped of pedestrians) {
+                        if (ped.dead) continue;
+                        const dx = bullet.x - ped.x;
+                        const dy = bullet.y - ped.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < 10) {
+                            ped.dead = true;
+                            bullets.splice(i, 1);
+                            increaseWantedLevel(1);
+                            game.money += 50;
 
-                        const mission = missions[(game.currentMission - 1) % missions.length];
-                        if (game.missionActive && mission.type === 'kill') {
-                            mission.killed++;
+                            const mission = missions[(game.currentMission - 1) % missions.length];
+                            if (game.missionActive && mission.type === 'kill') {
+                                mission.killed++;
+                            }
+                            break;
                         }
-                        break;
+                    }
+
+                    // Player bullets hit police vehicles
+                    for (let vehicle of vehicles) {
+                        if (!vehicle.isPolice) continue;
+                        const dx = bullet.x - vehicle.x;
+                        const dy = bullet.y - vehicle.y;
+                        if (Math.sqrt(dx*dx + dy*dy) < 20) {
+                            bullets.splice(i, 1);
+                            increaseWantedLevel(0.5);
+                            break;
+                        }
                     }
                 }
 
@@ -565,6 +784,17 @@
                 if (game.wantedTimer <= 0) {
                     game.wantedLevel = Math.max(0, game.wantedLevel - 0.01);
                     game.wantedTimer = 60;
+                }
+            }
+
+            // Clean up police count
+            game.policeCount = vehicles.filter(v => v.isPolice && !v.occupied).length;
+
+            // Update roadblocks
+            for (let i = game.roadblocks.length - 1; i >= 0; i--) {
+                game.roadblocks[i].time--;
+                if (game.roadblocks[i].time <= 0) {
+                    game.roadblocks.splice(i, 1);
                 }
             }
 
@@ -729,11 +959,21 @@
             }
 
             // Draw bullets
-            ctx.fillStyle = '#ffff00';
             for (let bullet of bullets) {
+                ctx.fillStyle = bullet.fromPolice ? '#ff0000' : '#ffff00';
                 ctx.beginPath();
                 ctx.arc(bullet.x, bullet.y, 3, 0, Math.PI * 2);
                 ctx.fill();
+
+                // Add tracer effect for police bullets
+                if (bullet.fromPolice) {
+                    ctx.strokeStyle = '#ff6666';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(bullet.x, bullet.y);
+                    ctx.lineTo(bullet.x - Math.cos(bullet.angle) * 10, bullet.y - Math.sin(bullet.angle) * 10);
+                    ctx.stroke();
+                }
             }
 
             // Draw player
@@ -777,6 +1017,22 @@
             player.vehicle = null;
             game.wantedLevel = 0;
             game.missionActive = false;
+            game.policeCount = 0;
+            game.roadblocks = [];
+
+            // Remove all police vehicles
+            for (let i = vehicles.length - 1; i >= 0; i--) {
+                if (vehicles[i].isPolice) {
+                    vehicles.splice(i, 1);
+                }
+            }
+
+            // Clear police bullets
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                if (bullets[i].fromPolice) {
+                    bullets.splice(i, 1);
+                }
+            }
         }
 
         // Game loop
